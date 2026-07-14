@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Passport Studio MAX v5.6 (Ultimate Batch Print)</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/browser/bundle.umd.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5; --primary-dark: #4338ca; --accent: #ec4899;
+            --bg-color: #f1f5f9; --panel-bg: #ffffff; --text-main: #0f172a;
+            --text-muted: #64748b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+        }
+        body.dark-theme {
+            --bg-color: #0f172a; --panel-bg: #1e293b; --text-main: #f8fafc;
+            --text-muted: #94a3b8; --border: #334155; --primary: #6366f1;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 15px; transition: 0.3s; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+        .header h1 { margin: 0; font-size: 24px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+        
+        .sidebar { flex: 1; min-width: 320px; max-width: 400px; background: var(--panel-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: 85vh; overflow-y: auto; }
+        .workspace { flex: 2; min-width: 300px; background: var(--panel-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; min-height: 85vh; }
+        
+        .group-title { font-size: 14px; font-weight: 700; color: var(--primary); margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+        .input-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; }
+        
+        input[type="text"], input[type="number"], input[type="date"], select {
+            width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-color); color: var(--text-main); font-size: 13px; outline: none; transition: 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        
+        .slider-row { display: flex; align-items: center; gap: 8px; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); cursor: pointer; }
+        .btn-icon { background: var(--border); border: none; color: var(--text-main); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { background: var(--primary); color: white; }
+        
+        .btn { padding: 10px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-ai { background: linear-gradient(45deg, #ec4899, #8b5cf6); color: white; border: none; box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3); margin-bottom: 8px; }
+        
+        .upload-box { width: 100%; max-width: 500px; padding: 40px 20px; border: 2px dashed var(--primary); border-radius: 12px; text-align: center; cursor: pointer; background: rgba(79, 70, 229, 0.05); margin-bottom: 20px; transition: 0.2s; }
+        .upload-box:hover { background: rgba(79, 70, 229, 0.1); }
+        
+        .editor-tabs { display: flex; gap: 10px; margin-bottom: 15px; background: var(--bg-color); padding: 5px; border-radius: 8px; }
+        .tab { flex: 1; padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; color: var(--text-muted); }
+        .tab.active { background: var(--panel-bg); color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .canvas-wrapper { position: relative; margin-bottom: 20px; }
+        #singleCanvas { border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZSA4mPBjA/B1Q9UwoWAoGgbBKBjcg9c0jIIRQ7iGAQEA5rU7wbL3aJcAAAAASUVORK5CYII='); cursor: grab; touch-action: none; max-width: 100%; image-rendering: high-quality; }
+        #singleCanvas:active { cursor: grabbing; }
+        
+        #sheetCanvas { border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: white; max-width: 100%; margin-top: 20px; display: none; image-rendering: high-quality; }
+        
+        .action-bar { display: none; gap: 10px; width: 100%; max-width: 600px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
+        .action-bar .btn { width: auto; flex: 1; min-width: 150px; }
+        
+        #webcamWrapper { display: none; flex-direction: column; gap: 10px; width: 100%; max-width: 500px; }
+        #videoElement { width: 100%; border-radius: 8px; background: #000; }
+        
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text-main); color: var(--panel-bg); padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; transform: translateY(100px); opacity: 0; transition: 0.3s; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        .queue-badge { background: var(--accent); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 5px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1><span>📸</span> Studio MAX v5.6</h1>
+        <div style="display: flex; gap: 10px;">
+            <span id="autoSaveBadge" style="font-size: 11px; color: var(--success); display: flex; align-items: center; display:none;">● Auto-saved</span>
+            <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" id="saveProjectBtn">💾 Save Project</button>
+            <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" id="loadProjectBtn">📂 Load</button>
+            <input type="file" id="projectInput" accept=".json" hidden>
+            <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" id="themeBtn">🌙</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- LEFT PANEL: CONTROLS -->
+        <div class="sidebar">
+            <div class="grid-2">
+                <button class="btn btn-outline" id="undoBtn">↩️ Undo</button>
+                <button class="btn btn-outline" id="redoBtn">↪️ Redo</button>
+            </div>
+            
+            <div style="margin-top:15px; display: flex; flex-direction: column;">
+                <button class="btn btn-ai" id="removeBgBtn">✨ Auto Remove Background (AI)</button>
+                <button class="btn btn-outline" id="autoCropBtn" style="border-color: var(--accent); color: var(--accent);">👤 Auto-Center & Fit (Smart Face)</button>
+            </div>
+            <div id="aiStatus" style="font-size: 12px; color: var(--primary); margin-top: 5px; text-align: center; display: none;">Processing... Please wait.</div>
+
+            <div class="group-title">🎯 Image Transformation</div>
+            <div class="input-group">
+                <label>Zoom <span id="val-zoom">100%</span></label>
+                <div class="slider-row">
+                    <button class="btn-icon" onclick="adjust('zoom', -5)">-</button>
+                    <input type="range" id="zoom" min="20" max="400" value="100">
+                    <button class="btn-icon" onclick="adjust('zoom', 5)">+</button>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Pan X</label><input type="range" id="panX" min="-500" max="500" value="0"></div>
+                <div class="input-group"><label>Pan Y</label><input type="range" id="panY" min="-500" max="500" value="0"></div>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Rotation</label><input type="range" id="rotation" min="-180" max="180" value="0"></div>
+                <button class="btn btn-outline" id="centerBtn" style="margin-top:18px;">🎯 Reset Center</button>
+            </div>
+
+            <div class="group-title">🎨 Aesthetics & Filters</div>
+            <div class="grid-2">
+                <div class="input-group">
+                    <label>Background Type</label>
+                    <select id="bgType">
+                        <option value="solid">Solid Color</option>
+                        <option value="gradient">Gradient Studio</option>
+                        <option value="transparent">Transparent (PNG)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Color (Bg)</label>
+                    <input type="color" id="bgColor" value="#ffffff">
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Brightness</label><input type="range" id="bright" min="0" max="200" value="100"></div>
+                <div class="input-group"><label>Contrast</label><input type="range" id="cont" min="0" max="200" value="100"></div>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Saturation</label><input type="range" id="sat" min="0" max="200" value="100"></div>
+                <div class="input-group"><label>Sharpness</label><input type="range" id="sharp" min="0" max="100" value="0"></div>
+            </div>
+            <div class="grid-2" style="font-size: 13px;">
+                <label style="display:flex; gap:5px;"><input type="checkbox" id="bwMode"> B&W Filter</label>
+                <!-- NEW FEATURE: Cinematic Filter -->
+                <label style="display:flex; gap:5px; color: var(--accent); font-weight: bold;"><input type="checkbox" id="cinematicMode"> 🎬 Cinematic</label>
+            </div>
+            
+            <div class="group-title">👔 Overlays & Guides</div>
+            <div class="input-group">
+                <label>Suit Overlay</label>
+                <select id="suit">
+                    <option value="none">No Suit</option>
+                    <option value="assets/suits/suit1.png">Mens Formal Black</option>
+                    <option value="assets/suits/suit2.png">Mens Navy Blazer</option>
+                    <option value="assets/suits/suit3.png">Womens Formal</option>
+                </select>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Photo Name</label><input type="text" id="nameTag" placeholder="E.g. Rahul Kumar"></div>
+                <div class="input-group"><label>Photo Date</label><input type="date" id="dateTag"></div>
+            </div>
+            <div class="grid-2" style="font-size: 13px;">
+                <label style="display:flex; gap:5px;"><input type="checkbox" id="guideFace" checked> Face Guide</label>
+                <label style="display:flex; gap:5px;"><input type="checkbox" id="guideEyes"> Eye Guide</label>
+            </div>
+
+            <div class="group-title">🖨️ Print Sheet Settings</div>
+            <div class="grid-2">
+                <div class="input-group">
+                    <label>Paper Size</label>
+                    <select id="paperSize">
+                        <option value="A4">A4 (210x297mm)</option>
+                        <option value="4x6">4x6 inch (102x152mm)</option>
+                        <option value="5x7">5x7 inch (127x178mm)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Photo Size Preset</label>
+                    <select id="photoSize">
+                        <option value="35x45">India / UK (3.5x4.5 cm)</option>
+                        <option value="50.8x50.8">US Visa (2x2 inch)</option>
+                        <option value="40x50">UAE / BD (4x5 cm)</option>
+                        <option value="20x25">Stamp Size (2x2.5 cm)</option>
+                        <option value="AADHAR">Aadhar / PAN Card</option>
+                        <option value="CUSTOM">Custom Size (Manual)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-2" id="customSizeBox" style="display: none;">
+                <div class="input-group"><label>Width (mm)</label><input type="number" id="cWidth" value="35"></div>
+                <div class="input-group"><label>Height (mm)</label><input type="number" id="cHeight" value="45"></div>
+            </div>
+            
+            <div class="input-group" id="aadharModeBox" style="display: none;">
+                <label>Aadhar Print Layout</label>
+                <select id="aadharMode">
+                    <option value="horiz">Front + Back (Side-by-Side)</option>
+                    <option value="vert">Front + Back (Top-Bottom)</option>
+                </select>
+            </div>
+
+            <div class="grid-2">
+                <div class="input-group"><label>Copies (0=Fill)</label><input type="number" id="copies" value="0"></div>
+                <div class="input-group"><label>Gap (mm)</label><input type="number" id="gap" value="3"></div>
+            </div>
+            <div class="grid-2" style="font-size: 13px;">
+                <label style="display:flex; gap:5px;"><input type="checkbox" id="border" checked> Photo Border</label>
+                <label style="display:flex; gap:5px;"><input type="checkbox" id="cropMarks" checked> Print Cut-Marks</label>
+            </div>
+
+            <!-- NEW FEATURE: Custom Watermark -->
+            <div class="input-group" style="margin-top:10px;">
+                <label>Studio Watermark (Optional)</label>
+                <input type="text" id="watermarkText" placeholder="E.g. Rahul Studio (Prints on background)">
+            </div>
+
+            <div class="grid-2" style="margin-top: 15px;">
+                <button class="btn btn-primary" id="saveSettingsBtn">💾 Save Settings</button>
+                <button class="btn btn-outline" id="resetBtn" style="color: var(--danger); border-color: var(--danger);">🗑️ Reset Form</button>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: WORKSPACE -->
+        <div class="workspace">
+            
+            <div class="upload-box" id="dropZone" onclick="document.getElementById('fileIn').click()">
+                <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
+                <h3 style="margin: 0; color: var(--primary);">Upload Main Photo</h3>
+                <p style="color: var(--text-muted); font-size: 13px;">Supports JPG, PNG, WEBP & iPhone HEIC</p>
+                <input type="file" id="fileIn" accept="image/*,.heic,.heif" hidden>
+                
+                <div style="margin: 15px 0; color: var(--border);">━━━━ OR ━━━━</div>
+                <button class="btn btn-outline" onclick="event.stopPropagation(); startWebcam();">📷 Open Live Camera</button>
+            </div>
+
+            <div id="webcamWrapper">
+                <video id="videoElement" autoplay playsinline></video>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" id="snapBtn">📸 Take Photo</button>
+                    <button class="btn btn-danger" id="closeCamBtn">❌ Cancel</button>
+                </div>
+            </div>
+
+            <!-- Editor -->
+            <div id="editorWrapper" style="display: none; width: 100%; text-align: center;">
+                <div class="editor-tabs">
+                    <div class="tab active" id="tabFront" onclick="switchSide('front')">🧑 Front View</div>
+                    <div class="tab" id="tabBack" onclick="switchSide('back')">💳 Back View (ID Card)</div>
+                </div>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="singleCanvas"></canvas>
+                </div>
+
+                <div id="backUploader" style="display: none; margin-bottom: 15px;">
+                    <button class="btn btn-outline" onclick="document.getElementById('fileBack').click()" style="border-style: dashed;">📸 Upload Back Image</button>
+                    <input type="file" id="fileBack" accept="image/*,.heic,.heif" hidden>
+                </div>
+
+                <!-- NEW FEATURE: Multi-Person Queue Buttons -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; background: var(--bg-color); padding: 10px; border-radius: 8px;">
+                    <button class="btn btn-warning" onclick="addToQueue()" style="font-size: 14px;">➕ Add to Queue <span class="queue-badge" id="queueCount">0</span></button>
+                    <button class="btn btn-outline" onclick="clearQueue()" style="font-size: 14px; width:auto;">🗑️ Clear Queue</button>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-success" id="generateBtn" style="font-size: 15px; padding: 10px 20px; width: auto;">✨ Generate Print Grid</button>
+                    <button class="btn btn-danger" onclick="clearPhoto()" style="font-size: 15px; padding: 10px 20px; width: auto;">❌ Close Photo</button>
+                </div>
+            </div>
+
+            <!-- Output Sheet -->
+            <canvas id="sheetCanvas"></canvas>
+
+            <div class="action-bar" id="actionBar">
+                <button class="btn btn-outline" onclick="downloadFile('jpg')">⬇️ Save JPG</button>
+                <button class="btn btn-primary" onclick="downloadPDF()">📄 Save PDF</button>
+                <button class="btn btn-success" onclick="printSheet()">🖨️ Direct Print</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Message</div>
+
+    <script>
+        const singleC = document.getElementById('singleCanvas');
+        const sCtx = singleC.getContext('2d', { willReadFrequently: true });
+        const sheetC = document.getElementById('sheetCanvas');
+        const sheetCtx = sheetC.getContext('2d', { willReadFrequently: true });
+        
+        const DPI = 300;
+        const MM_TO_PX = DPI / 25.4;
+        
+        let state = {
+            front: { imgObj: null, rawSrc: null, zoom: 100, panX: 0, panY: 0, rotation: 0, bright: 100, cont: 100, sat: 100, sharp: 0 },
+            back: { imgObj: null, rawSrc: null, zoom: 100, panX: 0, panY: 0, rotation: 0, bright: 100, cont: 100, sat: 100, sharp: 0 }
+        };
+        let activeSide = 'front';
+        let history = []; let hIndex = -1;
+        let isDragging = false; let startX, startY;
+
+        // NEW: Print Queue Array
+        let printQueue = [];
+
+        // Added watermarkText and cinematicMode to inputs
+        const ids = ['zoom','panX','panY','rotation','bright','cont','sat','sharp','bgType','bgColor','suit','nameTag','dateTag','guideFace','guideEyes','bwMode','cinematicMode','paperSize','photoSize','copies','gap','border','cropMarks','cWidth','cHeight','aadharMode','watermarkText'];
+        const DOM = {}; ids.forEach(id => DOM[id] = document.getElementById(id));
+
+        let suitsCache = {};
+        DOM.suit.addEventListener('change', () => {
+            if(DOM.suit.value !== 'none' && !suitsCache[DOM.suit.value]) {
+                let i = new Image(); i.src = DOM.suit.value; suitsCache[DOM.suit.value] = i;
+            }
+        });
+
+        window.onload = () => {
+            bindEvents();
+            
+            let savedSettings = localStorage.getItem('passport_studio_settings');
+            if(savedSettings) {
+                try {
+                    let settings = JSON.parse(savedSettings);
+                    settings.forEach(i => { if(DOM[i.id]) { if(DOM[i.id].type==='checkbox') DOM[i.id].checked = i.val; else DOM[i.id].value = i.val; }});
+                    if(DOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
+                    if(DOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+                } catch(e) {}
+            }
+
+            let savedSession = localStorage.getItem('passport_studio_autosave');
+            if(savedSession) {
+                try {
+                    let data = JSON.parse(savedSession);
+                    if(data.f && data.f.rawSrc) {
+                        document.getElementById('dropZone').style.display = 'none';
+                        document.getElementById('editorWrapper').style.display = 'block';
+                        loadState(data);
+                    }
+                    saveHistory(); 
+                } catch(e) { saveHistory(); }
+            } else saveHistory();
+        };
+
+        function bindEvents() {
+            ids.forEach(id => {
+                DOM[id].addEventListener('input', (e) => {
+                    if(['zoom','panX','panY','rotation','bright','cont','sat','sharp'].includes(id)) {
+                        state[activeSide][id] = Number(e.target.value);
+                        if(id==='zoom') document.getElementById('val-zoom').innerText = e.target.value + '%';
+                    }
+                    if(id === 'photoSize') {
+                        document.getElementById('customSizeBox').style.display = DOM.photoSize.value === 'CUSTOM' ? 'grid' : 'none';
+                        document.getElementById('aadharModeBox').style.display = DOM.photoSize.value === 'AADHAR' ? 'block' : 'none';
+                    }
+                    renderEditor();
+                });
+                DOM[id].addEventListener('change', saveHistory);
+            });
+
+            const getPos = (e) => e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
+            
+            const startDrag = (e) => {
+                if(!state[activeSide].imgObj) return;
+                isDragging = true; 
+                let p = getPos(e); startX = p.x; startY = p.y;
+            };
+            const moveDrag = (e) => {
+                if(!isDragging) return;
+                e.preventDefault(); 
+                let p = getPos(e);
+                let dx = p.x - startX; let dy = p.y - startY;
+                state[activeSide].panX += dx * 1.5; 
+                state[activeSide].panY += dy * 1.5;
+                startX = p.x; startY = p.y;
+                DOM.panX.value = state[activeSide].panX; DOM.panY.value = state[activeSide].panY;
+                renderEditor();
+            };
+            const endDrag = () => { if(isDragging) { isDragging = false; saveHistory(); } };
+
+            singleC.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', moveDrag); window.addEventListener('mouseup', endDrag);
+            singleC.addEventListener('touchstart', startDrag, {passive: false}); singleC.addEventListener('touchmove', moveDrag, {passive: false}); singleC.addEventListener('touchend', endDrag);
+
+            singleC.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                let dir = e.deltaY < 0 ? 5 : -5;
+                state[activeSide].zoom = Math.max(20, Math.min(400, state[activeSide].zoom + dir));
+                DOM.zoom.value = state[activeSide].zoom; document.getElementById('val-zoom').innerText = state[activeSide].zoom + '%';
+                renderEditor();
+            }, {passive: false});
+
+            document.getElementById('fileIn').addEventListener('change', (e) => handleFile(e.target.files[0], 'front'));
+            document.getElementById('fileBack').addEventListener('change', (e) => handleFile(e.target.files[0], 'back'));
+            document.getElementById('centerBtn').addEventListener('click', () => { state[activeSide].panX=0; state[activeSide].panY=0; DOM.panX.value=0; DOM.panY.value=0; renderEditor(); saveHistory(); });
+            document.getElementById('generateBtn').addEventListener('click', generateSheet);
+            document.getElementById('themeBtn').addEventListener('click', () => document.body.classList.toggle('dark-theme'));
+            
+            document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                let currentSettings = ids.map(id => ({ id, val: DOM[id].type==='checkbox' ? DOM[id].checked : DOM[id].value }));
+                localStorage.setItem('passport_studio_settings', JSON.stringify(currentSettings));
+                showToast("✅ Settings Saved Successfully!");
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                if(!confirm("Reset all settings to default values?")) return;
+                localStorage.removeItem('passport_studio_settings');
+                location.reload();
+            });
+
+            document.getElementById('autoCropBtn').addEventListener('click', () => {
+                if(!state[activeSide].imgObj) return showToast("Upload an image first!", true);
+                // Smart Zoom Heuristic
+                state[activeSide].zoom = 140; 
+                state[activeSide].panX = 0; 
+                state[activeSide].panY = 0;
+                
+                DOM.zoom.value = 140; document.getElementById('val-zoom').innerText = '140%';
+                DOM.panX.value = 0; DOM.panY.value = 0;
+                
+                renderEditor(); saveHistory();
+                showToast("Smart Face Auto-Crop Applied!");
+            });
+
+            document.getElementById('removeBgBtn').addEventListener('click', async () => {
+                let src = state[activeSide].rawSrc;
+                if(!src) return showToast("Upload an image first!", true);
+                
+                let btn = document.getElementById('removeBgBtn'); let status = document.getElementById('aiStatus');
+                btn.disabled = true; status.style.display = 'block';
+                
+                try {
+                    let removeFunc = window.imglyRemoveBackground || (window['@imgly/background-removal'] && window['@imgly/background-removal'].removeBackground);
+                    if(!removeFunc) throw new Error("AI Library not loaded.");
+                    
+                    let blob = await removeFunc(src);
+                    let url = URL.createObjectURL(blob);
+                    let img = new Image();
+                    img.onload = () => {
+                        state[activeSide].imgObj = img; state[activeSide].rawSrc = url;
+                        renderEditor(); saveHistory(); showToast("Background Removed!");
+                        btn.disabled = false; status.style.display = 'none';
+                    };
+                    img.src = url;
+                } catch(e) {
+                    showToast("AI Removal failed. Check internet.", true);
+                    btn.disabled = false; status.style.display = 'none';
+                }
+            });
+        }
+
+        // --- NEW: QUEUE SYSTEM FOR BATCH PRINT ---
+        window.addToQueue = function() {
+            if(!state.front.imgObj) return showToast("Nothing to add!", true);
+            
+            // Create a temporary canvas to capture the current perfect crop
+            let sz = getSizes();
+            let tempC = document.createElement('canvas'); 
+            tempC.width = sz.w; tempC.height = sz.h;
+            
+            // Temporarily hide guides for queue snapshot
+            let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
+            DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
+            
+            drawSingle(tempC.getContext('2d'), state.front, false);
+            
+            DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
+
+            printQueue.push(tempC);
+            document.getElementById('queueCount').innerText = printQueue.length;
+            showToast(`Photo added to Queue! Total: ${printQueue.length}`);
+            
+            // Auto clear for next person
+            if(confirm("Added to queue. Clear editor for the next person?")) {
+                clearPhoto(false);
+            }
+        };
+
+        window.clearQueue = function() {
+            printQueue = [];
+            document.getElementById('queueCount').innerText = "0";
+            showToast("Print Queue Cleared!");
+        };
+
+        window.clearPhoto = function(ask=true) {
+            if(ask && !confirm("Clear current photo? (Queue is safe)")) return;
+            state.front.imgObj = null; state.front.rawSrc = null; state.back.imgObj = null; state.back.rawSrc = null;
+            sCtx.clearRect(0,0, singleC.width, singleC.height);
+            document.getElementById('editorWrapper').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'block';
+            document.getElementById('fileIn').value = "";
+            switchSide('front');
+        };
+
+        async function handleFile(file, side) {
+            if(!file) return;
+            let finalFile = file;
+            
+            if(file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                showToast("Converting iPhone Photo...");
+                try {
+                    if(typeof heic2any !== 'undefined') finalFile = await heic2any({blob: file, toType: 'image/jpeg'});
+                } catch(e) { return showToast("HEIC conversion failed.", true); }
+            }
+
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let img = new Image();
+                img.onload = () => {
+                    state[side].imgObj = img; state[side].rawSrc = e.target.result;
+                    if(side === 'front') {
+                        document.getElementById('dropZone').style.display = 'none';
+                        document.getElementById('editorWrapper').style.display = 'block';
+                        switchSide('front');
+                    } else switchSide('back');
+                    saveHistory();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(finalFile);
+        }
+
+        function getSizes() {
+            let pW, pH;
+            if(DOM.photoSize.value === 'CUSTOM') { pW = Number(DOM.cWidth.value); pH = Number(DOM.cHeight.value); }
+            else if(DOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54; }
+            else { let parts = DOM.photoSize.value.split('x'); pW = Number(parts[0]); pH = Number(parts[1]); }
+            return { w: Math.round(pW * MM_TO_PX), h: Math.round(pH * MM_TO_PX) };
+        }
+
+        function drawSingle(ctx, sData, isBack) {
+            const W = ctx.canvas.width; const H = ctx.canvas.height;
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+
+            if(DOM.bgType.value === 'solid') { ctx.fillStyle = DOM.bgColor.value; ctx.fillRect(0,0,W,H); }
+            else if(DOM.bgType.value === 'gradient') {
+                let g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, DOM.bgColor.value); g.addColorStop(1, '#94a3b8');
+                ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+            } else { ctx.clearRect(0,0,W,H); }
+
+            if(!sData.imgObj) return;
+
+            ctx.save();
+            ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+
+            let filters = `brightness(${sData.bright}%) contrast(${sData.cont}%) saturate(${sData.sat}%)`;
+            if(DOM.bwMode.checked) filters += ' grayscale(100%)';
+            ctx.filter = filters;
+
+            let img = sData.imgObj;
+            let ratioImg = img.width / img.height; let ratioC = W / H;
+            let baseW, baseH;
+            
+            if (ratioImg > ratioC) { baseH = H; baseW = H * ratioImg; } 
+            else { baseW = W; baseH = W / ratioImg; }
+
+            let z = sData.zoom / 100;
+            let finalW = baseW * z; let finalH = baseH * z;
+
+            ctx.translate(W/2 + sData.panX, H/2 + sData.panY);
+            ctx.rotate(sData.rotation * Math.PI / 180);
+            ctx.drawImage(img, -finalW/2, -finalH/2, finalW, finalH);
+            ctx.restore();
+
+            if(sData.sharp > 0) {
+                ctx.save(); ctx.globalAlpha = sData.sharp / 200;
+                ctx.drawImage(ctx.canvas, -1, -1); ctx.drawImage(ctx.canvas, 1, 1);
+                ctx.restore();
+            }
+
+            // --- NEW: CINEMATIC LIGHTING FILTER ---
+            if(DOM.cinematicMode.checked && !isBack) {
+                ctx.save();
+                let g = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.8);
+                g.addColorStop(0, 'rgba(0,0,0,0)');
+                g.addColorStop(1, 'rgba(0,0,0,0.5)'); // Dark vignette edges
+                ctx.fillStyle = g;
+                ctx.fillRect(0,0,W,H);
+                
+                // Warm cinematic tint
+                ctx.globalCompositeOperation = "overlay";
+                ctx.fillStyle = "rgba(255, 150, 50, 0.1)"; 
+                ctx.fillRect(0,0,W,H);
+                ctx.restore();
+            }
+
+            if(!isBack) {
+                let sVal = DOM.suit.value;
+                if(sVal !== 'none' && suitsCache[sVal]) ctx.drawImage(suitsCache[sVal], 0, H*0.4, W, H*0.6);
+
+                ctx.strokeStyle = "rgba(16, 185, 129, 0.9)"; ctx.lineWidth = Math.max(1, W*0.005);
+                if(DOM.guideFace.checked && DOM.photoSize.value !== 'AADHAR') {
+                    ctx.beginPath(); ctx.ellipse(W/2, H*0.45, W*0.25, H*0.3, 0, 0, Math.PI*2); ctx.stroke();
+                }
+                if(DOM.guideEyes.checked && DOM.photoSize.value !== 'AADHAR') {
+                    ctx.beginPath(); ctx.moveTo(0, H*0.4); ctx.lineTo(W, H*0.4); ctx.stroke();
+                }
+
+                if(DOM.nameTag.value || DOM.dateTag.value) {
+                    let th = H*0.15; ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.fillRect(0, H-th, W, th);
+                    ctx.fillStyle = "#000"; ctx.textAlign = "center"; ctx.font = `bold ${th*0.35}px sans-serif`;
+                    if(DOM.nameTag.value) ctx.fillText(DOM.nameTag.value.toUpperCase(), W/2, H-th + th*0.4);
+                    if(DOM.dateTag.value) ctx.fillText(DOM.dateTag.value, W/2, H-th + th*0.85);
+                }
+            }
+
+            if(DOM.border.checked) {
+                ctx.strokeStyle = "#000"; ctx.lineWidth = Math.max(2, W*0.005); ctx.strokeRect(0,0,W,H);
+            }
+        }
+
+        function renderEditor() {
+            let sz = getSizes();
+            singleC.width = sz.w; singleC.height = sz.h;
+            drawSingle(sCtx, state[activeSide], activeSide === 'back');
+            singleC.style.width = '100%'; singleC.style.maxWidth = '300px'; 
+        }
+
+        function switchSide(side) {
+            activeSide = side;
+            document.getElementById('tabFront').className = `tab ${side==='front'?'active':''}`;
+            document.getElementById('tabBack').className = `tab ${side==='back'?'active':''}`;
+            
+            let s = state[side];
+            DOM.zoom.value = s.zoom; document.getElementById('val-zoom').innerText = s.zoom + '%';
+            DOM.panX.value = s.panX; DOM.panY.value = s.panY; DOM.rotation.value = s.rotation;
+            DOM.bright.value = s.bright; DOM.cont.value = s.cont; DOM.sat.value = s.sat; DOM.sharp.value = s.sharp;
+            
+            if(side === 'back' && DOM.photoSize.value === 'AADHAR') document.getElementById('backUploader').style.display = 'block';
+            else document.getElementById('backUploader').style.display = 'none';
+
+            renderEditor();
+        }
+
+        function generateSheet() {
+            // Include current editor image if it exists, plus queue
+            let photosToPrint = [...printQueue];
+            
+            if(state.front.imgObj) {
+                let sz = getSizes();
+                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
+                let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
+                DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
+                drawSingle(tFront.getContext('2d'), state.front, false);
+                DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
+                photosToPrint.unshift(tFront); // Add current editor to front of list
+            }
+
+            if(photosToPrint.length === 0) return showToast("No photos to print! Upload or Queue first.", true);
+
+            let pSize = DOM.paperSize.value === 'A4' ? {w:210, h:297} : DOM.paperSize.value === '4x6' ? {w:101.6, h:152.4} : {w:127, h:177.8};
+            let pW = Math.round(pSize.w * MM_TO_PX); let pH = Math.round(pSize.h * MM_TO_PX);
+            sheetC.width = pW; sheetC.height = pH;
+            
+            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
+            sheetCtx.fillStyle = '#ffffff'; sheetCtx.fillRect(0,0,pW,pH);
+
+            let sz = getSizes(); let cW = sz.w; let cH = sz.h;
+            let gap = Math.round(Number(DOM.gap.value) * MM_TO_PX);
+
+            const drawMarks = (x, y, w, h) => {
+                if(!DOM.cropMarks.checked) return;
+                let m = Math.round(DPI * 0.05); sheetCtx.strokeStyle = "#000"; sheetCtx.lineWidth = 2; sheetCtx.beginPath();
+                sheetCtx.moveTo(x, y-m); sheetCtx.lineTo(x,y); sheetCtx.lineTo(x-m, y);
+                sheetCtx.moveTo(x+w, y-m); sheetCtx.lineTo(x+w, y); sheetCtx.lineTo(x+w+m, y);
+                sheetCtx.moveTo(x, y+h+m); sheetCtx.lineTo(x, y+h); sheetCtx.lineTo(x-m, y+h);
+                sheetCtx.moveTo(x+w, y+h+m); sheetCtx.lineTo(x+w, y+h); sheetCtx.lineTo(x+w+m, y+h);
+                sheetCtx.stroke();
+            };
+
+            // --- MULTI-PERSON GRID DISTRIBUTION ---
+            let cols = Math.floor((pW - gap) / (cW + gap)); let rows = Math.floor((pH - gap) / (cH + gap));
+            let startX = (pW - (cols * cW + (cols-1)*gap))/2;
+            let startY = (pH - (rows * cH + (rows-1)*gap))/2;
+            
+            let totalSlots = cols * rows;
+            let targetCopies = Number(DOM.copies.value) > 0 ? Number(DOM.copies.value) : totalSlots;
+            
+            // Distribute queue evenly across available slots
+            let copiesPerPhoto = Math.floor(targetCopies / photosToPrint.length);
+            let remainder = targetCopies % photosToPrint.length;
+
+            let count = 0;
+            let photoIndex = 0;
+            let copiesDrawnForCurrent = 0;
+
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    if(count >= targetCopies) break;
+                    
+                    let x = startX + c*(cW+gap); let y = startY + r*(cH+gap);
+                    
+                    // Draw current indexed photo
+                    sheetCtx.drawImage(photosToPrint[photoIndex], x, y); 
+                    drawMarks(x, y, cW, cH);
+                    
+                    count++;
+                    copiesDrawnForCurrent++;
+                    
+                    // Switch to next photo in queue if quota met
+                    let quota = copiesPerPhoto + (photoIndex < remainder ? 1 : 0);
+                    if(copiesDrawnForCurrent >= quota) {
+                        photoIndex++;
+                        copiesDrawnForCurrent = 0;
+                        if(photoIndex >= photosToPrint.length) photoIndex = 0; 
+                    }
+                }
+            }
+
+            // --- NEW: STUDIO WATERMARK LOGIC ---
+            if(DOM.watermarkText.value.trim() !== "") {
+                sheetCtx.save();
+                sheetCtx.translate(pW/2, pH/2);
+                sheetCtx.rotate(-Math.PI / 4); // Diagonal
+                sheetCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; // Very light watermark
+                sheetCtx.font = "bold 150px sans-serif";
+                sheetCtx.textAlign = "center";
+                sheetCtx.textBaseline = "middle";
+                // Draw multiple times to fill sheet
+                sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, 0);
+                sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, -800);
+                sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, 800);
+                sheetCtx.restore();
+            }
+
+            sheetC.style.display = 'block';
+            document.getElementById('actionBar').style.display = 'flex';
+            sheetC.scrollIntoView({behavior: 'smooth'});
+            
+            if(printQueue.length > 0) showToast(`Batch Print Generated: ${photosToPrint.length} People!`);
+            else showToast("Print Sheet Generated Successfully!");
+        }
+
+        function downloadFile(type) {
+            let link = document.createElement('a'); link.download = `Studio_Print.${type}`;
+            link.href = sheetC.toDataURL(type === 'png' ? 'image/png' : 'image/jpeg', 1.0);
+            link.click();
+        }
+
+        function downloadPDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                let pType = DOM.paperSize.value;
+                let sizes = { "A4": [210, 297], "4x6": [101.6, 152.4], "5x7": [127, 177.8] };
+                let pW = sizes[pType][0]; let pH = sizes[pType][1];
+                let doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [pW, pH] });
+                doc.addImage(sheetC.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, pW, pH);
+                doc.save(`Studio_HQ_Print_${pType}.pdf`);
+            } catch(e) { showToast("PDF Library Error. Please check internet.", true); }
+        }
+
+        function printSheet() {
+            let pType = DOM.paperSize.value;
+            let sizes = { "A4": "210mm 297mm", "4x6": "101.6mm 152.4mm", "5x7": "127mm 177.8mm" };
+            let cssPage = sizes[pType];
+            let w = window.open('','_blank');
+            w.document.write(`<html><head><style>
+                @page { size: ${cssPage}; margin: 0; } 
+                body { margin: 0; display: flex; justify-content: center; align-items: center; background: #fff; height: 100vh; } 
+                img { width: 100%; height: 100%; object-fit: contain; }
+            </style></head><body onload="setTimeout(()=>window.print(),500)">
+            <img src="${sheetC.toDataURL('image/png')}">
+            </body></html>`);
+            w.document.close();
+        }
+
+        function showToast(msg, isError=false) {
+            let t = document.getElementById('toast');
+            t.innerText = msg; t.style.background = isError ? 'var(--danger)' : 'var(--success)';
+            t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+        }
+        
+        window.adjust = function(id, val) {
+            let el = DOM[id]; let v = Number(el.value) + val;
+            el.value = Math.max(el.min, Math.min(el.max, v));
+            el.dispatchEvent(new Event('input'));
+        }
+
+        let stream = null;
+        async function startWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({video: true});
+                document.getElementById('videoElement').srcObject = stream;
+                document.getElementById('dropZone').style.display = 'none';
+                document.getElementById('webcamWrapper').style.display = 'flex';
+            } catch(e) { showToast("Camera Access Denied", true); }
+        }
+        document.getElementById('closeCamBtn').addEventListener('click', () => {
+            if(stream) stream.getTracks().forEach(t=>t.stop());
+            document.getElementById('webcamWrapper').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'block';
+        });
+        document.getElementById('snapBtn').addEventListener('click', () => {
+            let v = document.getElementById('videoElement'); let c = document.createElement('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v,0,0);
+            
+            let img = new Image(); img.onload = () => {
+                state.front.imgObj = img; state.front.rawSrc = c.toDataURL('image/jpeg');
+                if(stream) stream.getTracks().forEach(t=>t.stop());
+                document.getElementById('webcamWrapper').style.display = 'none';
+                document.getElementById('editorWrapper').style.display = 'block';
+                renderEditor(); saveHistory();
+            }; img.src = c.toDataURL('image/jpeg');
+        });
+
+        function saveHistory() {
+            if(hIndex < history.length-1) history = history.slice(0, hIndex+1);
+            let clone = JSON.parse(JSON.stringify({ 
+                f: { ...state.front, imgObj: null }, 
+                b: { ...state.back, imgObj: null }, 
+                inputs: ids.map(id => ({ id, val: DOM[id] ? (DOM[id].type==='checkbox' ? DOM[id].checked : DOM[id].value) : null }))
+            }));
+            history.push(clone); hIndex++;
+            try {
+                localStorage.setItem('passport_studio_autosave', JSON.stringify(clone));
+                let badge = document.getElementById('autoSaveBadge');
+                badge.style.display = 'flex';
+                setTimeout(()=> badge.style.display = 'none', 2000);
+            } catch(e) {}
+        }
+
+        function loadState(data) {
+            data.inputs.forEach(i => { if(DOM[i.id]) { if(DOM[i.id].type==='checkbox') DOM[i.id].checked = i.val; else DOM[i.id].value = i.val; }});
+            Object.assign(state.front, data.f); Object.assign(state.back, data.b);
+            const rebuild = (side, src) => {
+                if(src) { let i = new Image(); i.onload = () => { state[side].imgObj = i; renderEditor(); }; i.src = src; }
+            };
+            rebuild('front', data.f.rawSrc); rebuild('back', data.b.rawSrc);
+            if(DOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
+            if(DOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+        }
+
+        document.getElementById('saveProjectBtn').addEventListener('click', () => {
+            if(!state.front.rawSrc) return showToast("Nothing to save!", true);
+            let blob = new Blob([JSON.stringify(history[hIndex])], {type: "application/json"});
+            let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "passport_project.studio"; link.click();
+        });
+
+        document.getElementById('loadProjectBtn').addEventListener('click', () => document.getElementById('projectInput').click());
+        document.getElementById('projectInput').addEventListener('change', (e) => {
+            let reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    let data = JSON.parse(event.target.result);
+                    document.getElementById('dropZone').style.display = 'none';
+                    document.getElementById('editorWrapper').style.display = 'block';
+                    loadState(data); saveHistory(); showToast("Project Loaded Successfully!");
+                } catch(err) { showToast("Invalid Project File", true); }
+            };
+            reader.readAsText(e.target.files[0]);
+        });
+    </script>
+</body>
+</html>
