@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/browser/bundle.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
 
     <style>
         :root {
@@ -86,7 +87,7 @@
 <body>
 
     <div class="header">
-        <h1><span>📸</span> Studio MAX v5.6</h1>
+        <h1><span>📸</span> RIYANSHI COMPUTER STUDIO v5.6</h1>
         <div style="display: flex; gap: 10px;">
             <span id="autoSaveBadge" style="font-size: 11px; color: var(--success); display: flex; align-items: center; display:none;">● Auto-saved</span>
             <button class="btn btn-outline" style="width: auto; padding: 5px 10px;" id="saveProjectBtn">💾 Save Project</button>
@@ -153,7 +154,6 @@
             </div>
             <div class="grid-2" style="font-size: 13px;">
                 <label style="display:flex; gap:5px;"><input type="checkbox" id="bwMode"> B&W Filter</label>
-                <!-- NEW FEATURE: Cinematic Filter -->
                 <label style="display:flex; gap:5px; color: var(--accent); font-weight: bold;"><input type="checkbox" id="cinematicMode"> 🎬 Cinematic</label>
             </div>
             
@@ -206,8 +206,9 @@
             <div class="input-group" id="aadharModeBox" style="display: none;">
                 <label>Aadhar Print Layout</label>
                 <select id="aadharMode">
-                    <option value="horiz">Front + Back (Side-by-Side)</option>
+                    <!-- FIX 2: Default to vertical (Top-Bottom) as requested for Aadhar styling -->
                     <option value="vert">Front + Back (Top-Bottom)</option>
+                    <option value="horiz">Front + Back (Side-by-Side)</option>
                 </select>
             </div>
 
@@ -220,7 +221,6 @@
                 <label style="display:flex; gap:5px;"><input type="checkbox" id="cropMarks" checked> Print Cut-Marks</label>
             </div>
 
-            <!-- NEW FEATURE: Custom Watermark -->
             <div class="input-group" style="margin-top:10px;">
                 <label>Studio Watermark (Optional)</label>
                 <input type="text" id="watermarkText" placeholder="E.g. Rahul Studio (Prints on background)">
@@ -269,7 +269,6 @@
                     <input type="file" id="fileBack" accept="image/*,.heic,.heif" hidden>
                 </div>
 
-                <!-- NEW FEATURE: Multi-Person Queue Buttons -->
                 <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; background: var(--bg-color); padding: 10px; border-radius: 8px;">
                     <button class="btn btn-warning" onclick="addToQueue()" style="font-size: 14px;">➕ Add to Queue <span class="queue-badge" id="queueCount">0</span></button>
                     <button class="btn btn-outline" onclick="clearQueue()" style="font-size: 14px; width:auto;">🗑️ Clear Queue</button>
@@ -311,17 +310,24 @@
         let history = []; let hIndex = -1;
         let isDragging = false; let startX, startY;
 
-        // NEW: Print Queue Array
         let printQueue = [];
 
-        // Added watermarkText and cinematicMode to inputs
         const ids = ['zoom','panX','panY','rotation','bright','cont','sat','sharp','bgType','bgColor','suit','nameTag','dateTag','guideFace','guideEyes','bwMode','cinematicMode','paperSize','photoSize','copies','gap','border','cropMarks','cWidth','cHeight','aadharMode','watermarkText'];
         const DOM = {}; ids.forEach(id => DOM[id] = document.getElementById(id));
+
+        if(localStorage.getItem('theme') === 'dark'){
+            document.body.classList.add('dark-theme');
+        }
 
         let suitsCache = {};
         DOM.suit.addEventListener('change', () => {
             if(DOM.suit.value !== 'none' && !suitsCache[DOM.suit.value]) {
-                let i = new Image(); i.src = DOM.suit.value; suitsCache[DOM.suit.value] = i;
+                let i = new Image(); 
+                i.onerror = ()=>{
+                   showToast("Suit image missing",true);
+                };
+                i.src = DOM.suit.value; 
+                suitsCache[DOM.suit.value] = i;
             }
         });
 
@@ -362,10 +368,20 @@
                     if(id === 'photoSize') {
                         document.getElementById('customSizeBox').style.display = DOM.photoSize.value === 'CUSTOM' ? 'grid' : 'none';
                         document.getElementById('aadharModeBox').style.display = DOM.photoSize.value === 'AADHAR' ? 'block' : 'none';
+                        // FIX 3: Ensure back uploader logic is smooth
+                        if(activeSide === 'back') document.getElementById('backUploader').style.display = 'block';
+                        else document.getElementById('backUploader').style.display = 'none';
                     }
                     renderEditor();
                 });
                 DOM[id].addEventListener('change', saveHistory);
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', () => {
+                if(hIndex > 0) { hIndex--; loadState(history[hIndex]); }
+            });
+            document.getElementById('redoBtn').addEventListener('click', () => {
+                if(hIndex < history.length - 1) { hIndex++; loadState(history[hIndex]); }
             });
 
             const getPos = (e) => e.touches ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : {x: e.clientX, y: e.clientY};
@@ -380,8 +396,8 @@
                 e.preventDefault(); 
                 let p = getPos(e);
                 let dx = p.x - startX; let dy = p.y - startY;
-                state[activeSide].panX += dx * 1.5; 
-                state[activeSide].panY += dy * 1.5;
+                state[activeSide].panX += dx; 
+                state[activeSide].panY += dy;
                 startX = p.x; startY = p.y;
                 DOM.panX.value = state[activeSide].panX; DOM.panY.value = state[activeSide].panY;
                 renderEditor();
@@ -403,7 +419,16 @@
             document.getElementById('fileBack').addEventListener('change', (e) => handleFile(e.target.files[0], 'back'));
             document.getElementById('centerBtn').addEventListener('click', () => { state[activeSide].panX=0; state[activeSide].panY=0; DOM.panX.value=0; DOM.panY.value=0; renderEditor(); saveHistory(); });
             document.getElementById('generateBtn').addEventListener('click', generateSheet);
-            document.getElementById('themeBtn').addEventListener('click', () => document.body.classList.toggle('dark-theme'));
+            
+            document.getElementById('themeBtn').addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                localStorage.setItem(
+                    'theme',
+                    document.body.classList.contains('dark-theme')
+                        ? 'dark'
+                        : 'light'
+                );
+            });
             
             document.getElementById('saveSettingsBtn').addEventListener('click', () => {
                 let currentSettings = ids.map(id => ({ id, val: DOM[id].type==='checkbox' ? DOM[id].checked : DOM[id].value }));
@@ -419,7 +444,6 @@
 
             document.getElementById('autoCropBtn').addEventListener('click', () => {
                 if(!state[activeSide].imgObj) return showToast("Upload an image first!", true);
-                // Smart Zoom Heuristic
                 state[activeSide].zoom = 140; 
                 state[activeSide].panX = 0; 
                 state[activeSide].panY = 0;
@@ -458,28 +482,59 @@
             });
         }
 
-        // --- NEW: QUEUE SYSTEM FOR BATCH PRINT ---
+        function createReadyCanvas() {
+            let sz = getSizes();
+            if (DOM.photoSize.value === 'AADHAR' && state.front.imgObj && state.back.imgObj) {
+                let isVert = DOM.aadharMode.value === 'vert';
+                let gapPx = Math.round(5 * MM_TO_PX); // 5mm gap between front and back ID
+                
+                let tComp = document.createElement('canvas');
+                tComp.width = isVert ? sz.w : (sz.w * 2 + gapPx);
+                tComp.height = isVert ? (sz.h * 2 + gapPx) : sz.h;
+                
+                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
+                let tBack = document.createElement('canvas'); tBack.width = sz.w; tBack.height = sz.h;
+                
+                let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
+                DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
+                
+                drawSingle(tFront.getContext('2d'), state.front, false);
+                drawSingle(tBack.getContext('2d'), state.back, true);
+                
+                DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
+                
+                let cCtx = tComp.getContext('2d');
+                cCtx.drawImage(tFront, 0, 0);
+                if (isVert) cCtx.drawImage(tBack, 0, sz.h + gapPx);
+                else cCtx.drawImage(tBack, sz.w + gapPx, 0);
+                
+                return tComp;
+            } else {
+                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
+                let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
+                DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
+                drawSingle(tFront.getContext('2d'), state.front, false);
+                DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
+                return tFront;
+            }
+        }
+
         window.addToQueue = function() {
             if(!state.front.imgObj) return showToast("Nothing to add!", true);
+            if(
+               DOM.photoSize.value === 'AADHAR' &&
+               !state.back.imgObj
+            ){
+               return showToast(
+                  "Upload Back Side Image First!",
+                  true
+               );
+            }
             
-            // Create a temporary canvas to capture the current perfect crop
-            let sz = getSizes();
-            let tempC = document.createElement('canvas'); 
-            tempC.width = sz.w; tempC.height = sz.h;
-            
-            // Temporarily hide guides for queue snapshot
-            let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
-            DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
-            
-            drawSingle(tempC.getContext('2d'), state.front, false);
-            
-            DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
-
-            printQueue.push(tempC);
+            printQueue.push(createReadyCanvas());
             document.getElementById('queueCount').innerText = printQueue.length;
-            showToast(`Photo added to Queue! Total: ${printQueue.length}`);
+            showToast(`Added to Queue! Total: ${printQueue.length}`);
             
-            // Auto clear for next person
             if(confirm("Added to queue. Clear editor for the next person?")) {
                 clearPhoto(false);
             }
@@ -498,6 +553,7 @@
             document.getElementById('editorWrapper').style.display = 'none';
             document.getElementById('dropZone').style.display = 'block';
             document.getElementById('fileIn').value = "";
+            document.getElementById('fileBack').value = ""; 
             switchSide('front');
         };
 
@@ -532,14 +588,14 @@
         function getSizes() {
             let pW, pH;
             if(DOM.photoSize.value === 'CUSTOM') { pW = Number(DOM.cWidth.value); pH = Number(DOM.cHeight.value); }
-            else if(DOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54; }
+            else if(DOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54; } // CR80 standard
             else { let parts = DOM.photoSize.value.split('x'); pW = Number(parts[0]); pH = Number(parts[1]); }
             return { w: Math.round(pW * MM_TO_PX), h: Math.round(pH * MM_TO_PX) };
         }
 
         function drawSingle(ctx, sData, isBack) {
             const W = ctx.canvas.width; const H = ctx.canvas.height;
-            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'medium';
 
             if(DOM.bgType.value === 'solid') { ctx.fillStyle = DOM.bgColor.value; ctx.fillRect(0,0,W,H); }
             else if(DOM.bgType.value === 'gradient') {
@@ -577,16 +633,14 @@
                 ctx.restore();
             }
 
-            // --- NEW: CINEMATIC LIGHTING FILTER ---
             if(DOM.cinematicMode.checked && !isBack) {
                 ctx.save();
                 let g = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.8);
                 g.addColorStop(0, 'rgba(0,0,0,0)');
-                g.addColorStop(1, 'rgba(0,0,0,0.5)'); // Dark vignette edges
+                g.addColorStop(1, 'rgba(0,0,0,0.5)'); 
                 ctx.fillStyle = g;
                 ctx.fillRect(0,0,W,H);
                 
-                // Warm cinematic tint
                 ctx.globalCompositeOperation = "overlay";
                 ctx.fillStyle = "rgba(255, 150, 50, 0.1)"; 
                 ctx.fillRect(0,0,W,H);
@@ -635,24 +689,27 @@
             DOM.panX.value = s.panX; DOM.panY.value = s.panY; DOM.rotation.value = s.rotation;
             DOM.bright.value = s.bright; DOM.cont.value = s.cont; DOM.sat.value = s.sat; DOM.sharp.value = s.sharp;
             
-            if(side === 'back' && DOM.photoSize.value === 'AADHAR') document.getElementById('backUploader').style.display = 'block';
+            // FIX: Always show back uploader clearly when switching to back tab
+            if(side === 'back') document.getElementById('backUploader').style.display = 'block';
             else document.getElementById('backUploader').style.display = 'none';
 
             renderEditor();
         }
 
         function generateSheet() {
-            // Include current editor image if it exists, plus queue
             let photosToPrint = [...printQueue];
             
             if(state.front.imgObj) {
-                let sz = getSizes();
-                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
-                let gf = DOM.guideFace.checked; let ge = DOM.guideEyes.checked;
-                DOM.guideFace.checked = false; DOM.guideEyes.checked = false;
-                drawSingle(tFront.getContext('2d'), state.front, false);
-                DOM.guideFace.checked = gf; DOM.guideEyes.checked = ge;
-                photosToPrint.unshift(tFront); // Add current editor to front of list
+                if(
+                   DOM.photoSize.value === 'AADHAR' &&
+                   !state.back.imgObj
+                ){
+                   return showToast(
+                      "Upload Back Side Image First!",
+                      true
+                   );
+                }
+                photosToPrint.unshift(createReadyCanvas());
             }
 
             if(photosToPrint.length === 0) return showToast("No photos to print! Upload or Queue first.", true);
@@ -661,10 +718,10 @@
             let pW = Math.round(pSize.w * MM_TO_PX); let pH = Math.round(pSize.h * MM_TO_PX);
             sheetC.width = pW; sheetC.height = pH;
             
-            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
+            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'medium';
             sheetCtx.fillStyle = '#ffffff'; sheetCtx.fillRect(0,0,pW,pH);
 
-            let sz = getSizes(); let cW = sz.w; let cH = sz.h;
+            let cW = photosToPrint[0].width; let cH = photosToPrint[0].height;
             let gap = Math.round(Number(DOM.gap.value) * MM_TO_PX);
 
             const drawMarks = (x, y, w, h) => {
@@ -677,17 +734,31 @@
                 sheetCtx.stroke();
             };
 
-            // --- MULTI-PERSON GRID DISTRIBUTION ---
             let cols = Math.floor((pW - gap) / (cW + gap)); let rows = Math.floor((pH - gap) / (cH + gap));
+            let totalSlots = cols * rows;
+            
+            // FIX: Handle "upar hi ek print ho dono side wala" -> Exact 1 copy top-center for Aadhar by default
+            let targetCopies = Number(DOM.copies.value);
+            let isAadhar = (DOM.photoSize.value === 'AADHAR');
+
+            if (targetCopies === 0) {
+                // If Aadhar, just print exactly 1 per person by default (instead of filling the whole sheet)
+                targetCopies = isAadhar ? photosToPrint.length : totalSlots;
+            }
+
+            let copiesPerPhoto = Math.floor(targetCopies / photosToPrint.length);
+            let remainder = targetCopies % photosToPrint.length;
+
             let startX = (pW - (cols * cW + (cols-1)*gap))/2;
             let startY = (pH - (rows * cH + (rows-1)*gap))/2;
             
-            let totalSlots = cols * rows;
-            let targetCopies = Number(DOM.copies.value) > 0 ? Number(DOM.copies.value) : totalSlots;
-            
-            // Distribute queue evenly across available slots
-            let copiesPerPhoto = Math.floor(targetCopies / photosToPrint.length);
-            let remainder = targetCopies % photosToPrint.length;
+            // FIX: If single/few Aadhar cards, anchor them directly to the TOP CENTER of the sheet.
+            if (isAadhar && targetCopies <= cols) {
+                startY = Math.max(gap, Math.round(15 * MM_TO_PX)); // 15mm fixed top margin
+                if (targetCopies === 1) {
+                    startX = (pW - cW) / 2; // Perfectly horizontally center single card
+                }
+            }
 
             let count = 0;
             let photoIndex = 0;
@@ -699,14 +770,12 @@
                     
                     let x = startX + c*(cW+gap); let y = startY + r*(cH+gap);
                     
-                    // Draw current indexed photo
                     sheetCtx.drawImage(photosToPrint[photoIndex], x, y); 
                     drawMarks(x, y, cW, cH);
                     
                     count++;
                     copiesDrawnForCurrent++;
                     
-                    // Switch to next photo in queue if quota met
                     let quota = copiesPerPhoto + (photoIndex < remainder ? 1 : 0);
                     if(copiesDrawnForCurrent >= quota) {
                         photoIndex++;
@@ -716,16 +785,14 @@
                 }
             }
 
-            // --- NEW: STUDIO WATERMARK LOGIC ---
             if(DOM.watermarkText.value.trim() !== "") {
                 sheetCtx.save();
                 sheetCtx.translate(pW/2, pH/2);
-                sheetCtx.rotate(-Math.PI / 4); // Diagonal
-                sheetCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; // Very light watermark
+                sheetCtx.rotate(-Math.PI / 4); 
+                sheetCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; 
                 sheetCtx.font = "bold 150px sans-serif";
                 sheetCtx.textAlign = "center";
                 sheetCtx.textBaseline = "middle";
-                // Draw multiple times to fill sheet
                 sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, 0);
                 sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, -800);
                 sheetCtx.fillText(DOM.watermarkText.value.toUpperCase(), 0, 800);
@@ -741,9 +808,13 @@
         }
 
         function downloadFile(type) {
-            let link = document.createElement('a'); link.download = `Studio_Print.${type}`;
-            link.href = sheetC.toDataURL(type === 'png' ? 'image/png' : 'image/jpeg', 1.0);
-            link.click();
+            let mimeType = type === 'png' ? 'image/png' : 'image/jpeg';
+            sheetC.toBlob((blob)=>{
+               let a=document.createElement("a");
+               a.href=URL.createObjectURL(blob);
+               a.download=`Studio_HQ_Print.${type}`;
+               a.click();
+            }, mimeType, 1);
         }
 
         function downloadPDF() {
@@ -782,13 +853,19 @@
         window.adjust = function(id, val) {
             let el = DOM[id]; let v = Number(el.value) + val;
             el.value = Math.max(el.min, Math.min(el.max, v));
-            el.dispatchEvent(new Event('input'));
+            el.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         let stream = null;
         async function startWebcam() {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({video: true});
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        facingMode: "user"
+                    }
+                });
                 document.getElementById('videoElement').srcObject = stream;
                 document.getElementById('dropZone').style.display = 'none';
                 document.getElementById('webcamWrapper').style.display = 'flex';
@@ -799,12 +876,13 @@
             document.getElementById('webcamWrapper').style.display = 'none';
             document.getElementById('dropZone').style.display = 'block';
         });
+        
         document.getElementById('snapBtn').addEventListener('click', () => {
             let v = document.getElementById('videoElement'); let c = document.createElement('canvas');
             c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v,0,0);
             
             let img = new Image(); img.onload = () => {
-                state.front.imgObj = img; state.front.rawSrc = c.toDataURL('image/jpeg');
+                state[activeSide].imgObj = img; state[activeSide].rawSrc = c.toDataURL('image/jpeg');
                 if(stream) stream.getTracks().forEach(t=>t.stop());
                 document.getElementById('webcamWrapper').style.display = 'none';
                 document.getElementById('editorWrapper').style.display = 'block';
@@ -815,11 +893,32 @@
         function saveHistory() {
             if(hIndex < history.length-1) history = history.slice(0, hIndex+1);
             let clone = JSON.parse(JSON.stringify({ 
-                f: { ...state.front, imgObj: null }, 
-                b: { ...state.back, imgObj: null }, 
-                inputs: ids.map(id => ({ id, val: DOM[id] ? (DOM[id].type==='checkbox' ? DOM[id].checked : DOM[id].value) : null }))
+                f: {
+                    ...state.front,
+                    imgObj: null,
+                    rawSrc: state.front.rawSrc
+                }, 
+                b: {
+                    ...state.back,
+                    imgObj: null,
+                    rawSrc: state.back.rawSrc
+                }, 
+                inputs: ids.map(id => ({
+                    id,
+                    val: DOM[id]
+                        ? (DOM[id].type === 'checkbox'
+                            ? DOM[id].checked
+                            : DOM[id].value)
+                        : null
+                }))
             }));
             history.push(clone); hIndex++;
+            
+            if(history.length > 30){
+               history.shift();
+               hIndex--;
+            }
+
             try {
                 localStorage.setItem('passport_studio_autosave', JSON.stringify(clone));
                 let badge = document.getElementById('autoSaveBadge');
