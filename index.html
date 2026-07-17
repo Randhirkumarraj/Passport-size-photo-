@@ -106,10 +106,10 @@
             </div>
             
             <div style="margin-top:15px; display: flex; flex-direction: column;">
-                <button class="btn btn-ai" id="removeBgBtn">✨ Auto Remove Background (AI)</button>
+                <button class="btn btn-ai" id="removeBgBtn">✨ Auto Remove Background (Browser JS)</button>
                 <button class="btn btn-outline" id="autoCropBtn" style="border-color: var(--accent); color: var(--accent);">👤 Auto-Center & Fit (Smart Face)</button>
             </div>
-            <div id="aiStatus" style="font-size: 12px; color: var(--primary); margin-top: 5px; text-align: center; display: none;">Processing... Please wait.</div>
+            <div id="aiStatus" style="font-size: 12px; color: var(--primary); margin-top: 5px; text-align: center; display: none;">Processing completely in browser... Please wait.</div>
 
             <div class="group-title">🎯 Image Transformation</div>
             <div class="input-group">
@@ -136,12 +136,15 @@
                     <select id="bgType">
                         <option value="solid">Solid Color</option>
                         <option value="gradient">Gradient Studio</option>
+                        <option value="custom">Custom Image (Gallery)</option>
                         <option value="transparent">Transparent (PNG)</option>
                     </select>
                 </div>
                 <div class="input-group">
-                    <label>Color (Bg)</label>
+                    <label id="bgControlLabel">Color (Bg)</label>
                     <input type="color" id="bgColor" value="#ffffff">
+                    <button id="customBgBtn" class="btn btn-outline" style="display:none; font-size: 13px; padding: 8px;">🖼️ Choose Background</button>
+                    <input type="file" id="customBgFile" accept="image/*" hidden>
                 </div>
             </div>
             <div class="grid-2">
@@ -190,6 +193,10 @@
                     <label>Photo Size Preset</label>
                     <select id="photoSize">
                         <option value="35x45">India / UK (3.5x4.5 cm)</option>
+                        <option value="76.2x50.8">3x2 inch (चौड़ाई 3in x लम्बाई 2in)</option>
+                        <option value="50.8x76.2">2x3 inch (चौड़ाई 2in x लम्बाई 3in)</option>
+                        <option value="101.6x152.4">4x6 inch (Full Jumbo Photo)</option>
+                        <option value="210x297">A4 size (Full Page Portrait)</option>
                         <option value="50.8x50.8">US Visa (2x2 inch)</option>
                         <option value="40x50">UAE / BD (4x5 cm)</option>
                         <option value="20x25">Stamp Size (2x2.5 cm)</option>
@@ -206,7 +213,6 @@
             <div class="input-group" id="aadharModeBox" style="display: none;">
                 <label>Aadhar Print Layout</label>
                 <select id="aadharMode">
-                    <!-- FIX 2: Default to vertical (Top-Bottom) as requested for Aadhar styling -->
                     <option value="vert">Front + Back (Top-Bottom)</option>
                     <option value="horiz">Front + Back (Side-by-Side)</option>
                 </select>
@@ -247,6 +253,11 @@
 
             <div id="webcamWrapper">
                 <video id="videoElement" autoplay playsinline></video>
+                <!-- NEW CAMERA CONTROLS (SWITCH & TORCH) -->
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 5px;" id="camControls">
+                    <button class="btn btn-outline" id="switchCamBtn" style="font-size: 13px; padding: 6px 12px;">🔄 Switch Camera</button>
+                    <button class="btn btn-outline" id="torchBtn" style="font-size: 13px; padding: 6px 12px; display: none;">🔦 Flashlight</button>
+                </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-success" id="snapBtn">📸 Take Photo</button>
                     <button class="btn btn-danger" id="closeCamBtn">❌ Cancel</button>
@@ -284,7 +295,8 @@
             <canvas id="sheetCanvas"></canvas>
 
             <div class="action-bar" id="actionBar">
-                <button class="btn btn-outline" onclick="downloadFile('jpg')">⬇️ Save JPG</button>
+                <!-- Changed to PNG for 100% Lossless High Quality -->
+                <button class="btn btn-outline" onclick="downloadFile('png')">⬇️ Save PNG (HQ)</button>
                 <button class="btn btn-primary" onclick="downloadPDF()">📄 Save PDF</button>
                 <button class="btn btn-success" onclick="printSheet()">🖨️ Direct Print</button>
             </div>
@@ -299,7 +311,8 @@
         const sheetC = document.getElementById('sheetCanvas');
         const sheetCtx = sheetC.getContext('2d', { willReadFrequently: true });
         
-        const DPI = 300;
+        // UPGRADED TO 600 DPI for Extreme High Quality Printing (No Loss)
+        const DPI = 600;
         const MM_TO_PX = DPI / 25.4;
         
         let state = {
@@ -307,6 +320,8 @@
             back: { imgObj: null, rawSrc: null, zoom: 100, panX: 0, panY: 0, rotation: 0, bright: 100, cont: 100, sat: 100, sharp: 0 }
         };
         let activeSide = 'front';
+        let customBgImg = null; // Storing custom gallery background
+        
         let history = []; let hIndex = -1;
         let isDragging = false; let startX, startY;
 
@@ -341,6 +356,7 @@
                     settings.forEach(i => { if(DOM[i.id]) { if(DOM[i.id].type==='checkbox') DOM[i.id].checked = i.val; else DOM[i.id].value = i.val; }});
                     if(DOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
                     if(DOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+                    DOM.bgType.dispatchEvent(new Event('change'));
                 } catch(e) {}
             }
 
@@ -368,13 +384,52 @@
                     if(id === 'photoSize') {
                         document.getElementById('customSizeBox').style.display = DOM.photoSize.value === 'CUSTOM' ? 'grid' : 'none';
                         document.getElementById('aadharModeBox').style.display = DOM.photoSize.value === 'AADHAR' ? 'block' : 'none';
-                        // FIX 3: Ensure back uploader logic is smooth
                         if(activeSide === 'back') document.getElementById('backUploader').style.display = 'block';
                         else document.getElementById('backUploader').style.display = 'none';
                     }
                     renderEditor();
                 });
-                DOM[id].addEventListener('change', saveHistory);
+                
+                if(id === 'bgType') {
+                    DOM[id].addEventListener('change', (e) => {
+                        let val = e.target.value;
+                        document.getElementById('bgColor').style.display = (val === 'solid' || val === 'gradient') ? 'block' : 'none';
+                        document.getElementById('customBgBtn').style.display = val === 'custom' ? 'block' : 'none';
+                        
+                        if(val === 'custom') {
+                            document.getElementById('bgControlLabel').innerText = 'Upload BG';
+                            if(!customBgImg) document.getElementById('customBgFile').click();
+                        } else if (val === 'transparent') {
+                            document.getElementById('bgControlLabel').innerText = 'Transparent';
+                        } else {
+                            document.getElementById('bgControlLabel').innerText = 'Color (Bg)';
+                        }
+                        saveHistory();
+                        renderEditor();
+                    });
+                } else {
+                    DOM[id].addEventListener('change', saveHistory);
+                }
+            });
+
+            document.getElementById('customBgBtn').addEventListener('click', () => {
+                document.getElementById('customBgFile').click();
+            });
+
+            document.getElementById('customBgFile').addEventListener('change', (e) => {
+                let file = e.target.files[0];
+                if(!file) return;
+                let reader = new FileReader();
+                reader.onload = (event) => {
+                    let img = new Image();
+                    img.onload = () => {
+                        customBgImg = img;
+                        renderEditor();
+                        saveHistory();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             });
 
             document.getElementById('undoBtn').addEventListener('click', () => {
@@ -466,17 +521,19 @@
                     let removeFunc = window.imglyRemoveBackground || (window['@imgly/background-removal'] && window['@imgly/background-removal'].removeBackground);
                     if(!removeFunc) throw new Error("AI Library not loaded.");
                     
-                    let blob = await removeFunc(src);
+                    let config = { publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/" };
+                    let blob = await removeFunc(src, config);
                     let url = URL.createObjectURL(blob);
                     let img = new Image();
                     img.onload = () => {
                         state[activeSide].imgObj = img; state[activeSide].rawSrc = url;
-                        renderEditor(); saveHistory(); showToast("Background Removed!");
+                        renderEditor(); saveHistory(); showToast("Background Removed Perfectly!");
                         btn.disabled = false; status.style.display = 'none';
                     };
                     img.src = url;
                 } catch(e) {
-                    showToast("AI Removal failed. Check internet.", true);
+                    showToast("AI Removal failed. Check your internet connection.", true);
+                    console.error(e);
                     btn.disabled = false; status.style.display = 'none';
                 }
             });
@@ -486,7 +543,7 @@
             let sz = getSizes();
             if (DOM.photoSize.value === 'AADHAR' && state.front.imgObj && state.back.imgObj) {
                 let isVert = DOM.aadharMode.value === 'vert';
-                let gapPx = Math.round(5 * MM_TO_PX); // 5mm gap between front and back ID
+                let gapPx = Math.round(5 * MM_TO_PX);
                 
                 let tComp = document.createElement('canvas');
                 tComp.width = isVert ? sz.w : (sz.w * 2 + gapPx);
@@ -521,14 +578,8 @@
 
         window.addToQueue = function() {
             if(!state.front.imgObj) return showToast("Nothing to add!", true);
-            if(
-               DOM.photoSize.value === 'AADHAR' &&
-               !state.back.imgObj
-            ){
-               return showToast(
-                  "Upload Back Side Image First!",
-                  true
-               );
+            if(DOM.photoSize.value === 'AADHAR' && !state.back.imgObj){
+               return showToast("Upload Back Side Image First!", true);
             }
             
             printQueue.push(createReadyCanvas());
@@ -588,20 +639,35 @@
         function getSizes() {
             let pW, pH;
             if(DOM.photoSize.value === 'CUSTOM') { pW = Number(DOM.cWidth.value); pH = Number(DOM.cHeight.value); }
-            else if(DOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54; } // CR80 standard
+            else if(DOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54; } 
             else { let parts = DOM.photoSize.value.split('x'); pW = Number(parts[0]); pH = Number(parts[1]); }
             return { w: Math.round(pW * MM_TO_PX), h: Math.round(pH * MM_TO_PX) };
         }
 
         function drawSingle(ctx, sData, isBack) {
             const W = ctx.canvas.width; const H = ctx.canvas.height;
-            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'medium';
+            // HIGH Quality image smoothing setup
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
 
             if(DOM.bgType.value === 'solid') { ctx.fillStyle = DOM.bgColor.value; ctx.fillRect(0,0,W,H); }
             else if(DOM.bgType.value === 'gradient') {
                 let g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, DOM.bgColor.value); g.addColorStop(1, '#94a3b8');
                 ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-            } else { ctx.clearRect(0,0,W,H); }
+            } 
+            else if(DOM.bgType.value === 'custom' && customBgImg) {
+                // Perfect Aspect Ratio Cover Logic for Gallery Image
+                let imgRatio = customBgImg.width / customBgImg.height; 
+                let cRatio = W / H;
+                let dw, dh, dx, dy;
+                
+                if(imgRatio > cRatio) {
+                    dh = H; dw = H * imgRatio; dy = 0; dx = (W - dw) / 2;
+                } else {
+                    dw = W; dh = W / imgRatio; dx = 0; dy = (H - dh) / 2;
+                }
+                ctx.drawImage(customBgImg, dx, dy, dw, dh);
+            }
+            else { ctx.clearRect(0,0,W,H); }
 
             if(!sData.imgObj) return;
 
@@ -689,7 +755,6 @@
             DOM.panX.value = s.panX; DOM.panY.value = s.panY; DOM.rotation.value = s.rotation;
             DOM.bright.value = s.bright; DOM.cont.value = s.cont; DOM.sat.value = s.sat; DOM.sharp.value = s.sharp;
             
-            // FIX: Always show back uploader clearly when switching to back tab
             if(side === 'back') document.getElementById('backUploader').style.display = 'block';
             else document.getElementById('backUploader').style.display = 'none';
 
@@ -700,14 +765,8 @@
             let photosToPrint = [...printQueue];
             
             if(state.front.imgObj) {
-                if(
-                   DOM.photoSize.value === 'AADHAR' &&
-                   !state.back.imgObj
-                ){
-                   return showToast(
-                      "Upload Back Side Image First!",
-                      true
-                   );
+                if(DOM.photoSize.value === 'AADHAR' && !state.back.imgObj){
+                   return showToast("Upload Back Side Image First!", true);
                 }
                 photosToPrint.unshift(createReadyCanvas());
             }
@@ -718,7 +777,8 @@
             let pW = Math.round(pSize.w * MM_TO_PX); let pH = Math.round(pSize.h * MM_TO_PX);
             sheetC.width = pW; sheetC.height = pH;
             
-            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'medium';
+            // Setting HIGH quality smoothing for print sheet
+            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
             sheetCtx.fillStyle = '#ffffff'; sheetCtx.fillRect(0,0,pW,pH);
 
             let cW = photosToPrint[0].width; let cH = photosToPrint[0].height;
@@ -734,29 +794,35 @@
                 sheetCtx.stroke();
             };
 
-            let cols = Math.floor((pW - gap) / (cW + gap)); let rows = Math.floor((pH - gap) / (cH + gap));
-            let totalSlots = cols * rows;
+            // LOGIC UPDATED FOR FULL PAGE OR EXACT SINGLE COPY CENTERING
+            let cols = Math.max(1, Math.floor((pW + gap) / (cW + gap))); 
+            let rows = Math.max(1, Math.floor((pH + gap) / (cH + gap)));
             
-            // FIX: Handle "upar hi ek print ho dono side wala" -> Exact 1 copy top-center for Aadhar by default
+            let totalSlots = cols * rows;
             let targetCopies = Number(DOM.copies.value);
             let isAadhar = (DOM.photoSize.value === 'AADHAR');
 
             if (targetCopies === 0) {
-                // If Aadhar, just print exactly 1 per person by default (instead of filling the whole sheet)
                 targetCopies = isAadhar ? photosToPrint.length : totalSlots;
             }
 
             let copiesPerPhoto = Math.floor(targetCopies / photosToPrint.length);
             let remainder = targetCopies % photosToPrint.length;
 
-            let startX = (pW - (cols * cW + (cols-1)*gap))/2;
-            let startY = (pH - (rows * cH + (rows-1)*gap))/2;
+            let totalW = cols * cW + (cols - 1) * gap;
+            let totalH = rows * cH + (rows - 1) * gap;
+
+            let startX = (pW - totalW) / 2;
+            let startY = (pH - totalH) / 2;
             
-            // FIX: If single/few Aadhar cards, anchor them directly to the TOP CENTER of the sheet.
-            if (isAadhar && targetCopies <= cols) {
-                startY = Math.max(gap, Math.round(15 * MM_TO_PX)); // 15mm fixed top margin
+            // Special handling if they only want 1 copy of ANY photo size, center it perfectly!
+            if (targetCopies === 1 && !isAadhar) {
+                startX = (pW - cW) / 2;
+                startY = (pH - cH) / 2;
+            } else if (isAadhar && targetCopies <= cols) {
+                startY = Math.max(gap, Math.round(15 * MM_TO_PX)); 
                 if (targetCopies === 1) {
-                    startX = (pW - cW) / 2; // Perfectly horizontally center single card
+                    startX = (pW - cW) / 2; 
                 }
             }
 
@@ -807,6 +873,7 @@
             else showToast("Print Sheet Generated Successfully!");
         }
 
+        // Updated for Lossless PNG Download
         function downloadFile(type) {
             let mimeType = type === 'png' ? 'image/png' : 'image/jpeg';
             sheetC.toBlob((blob)=>{
@@ -814,7 +881,7 @@
                a.href=URL.createObjectURL(blob);
                a.download=`Studio_HQ_Print.${type}`;
                a.click();
-            }, mimeType, 1);
+            }, mimeType, 1.0);
         }
 
         function downloadPDF() {
@@ -824,6 +891,7 @@
                 let sizes = { "A4": [210, 297], "4x6": [101.6, 152.4], "5x7": [127, 177.8] };
                 let pW = sizes[pType][0]; let pH = sizes[pType][1];
                 let doc = new jsPDF({ orientation: 'p', unit: 'mm', format: [pW, pH] });
+                // Saving as JPEG inside PDF with Max Quality to keep file size normal
                 doc.addImage(sheetC.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, pW, pH);
                 doc.save(`Studio_HQ_Print_${pType}.pdf`);
             } catch(e) { showToast("PDF Library Error. Please check internet.", true); }
@@ -856,21 +924,74 @@
             el.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
+        /* NEW WEBCAM LOGIC (Camera Switch & Flashlight) */
         let stream = null;
+        let currentFacingMode = "user"; // "user" for front, "environment" for back
+        let isTorchOn = false;
+
         async function startWebcam() {
+            if(stream) stream.getTracks().forEach(t=>t.stop()); // Stop existing stream if running
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
-                        facingMode: "user"
+                        facingMode: { ideal: currentFacingMode }
                     }
                 });
-                document.getElementById('videoElement').srcObject = stream;
+                
+                let v = document.getElementById('videoElement');
+                v.srcObject = stream;
+                
+                // Check capabilities once video loads
+                v.onloadedmetadata = () => {
+                    checkCameraCapabilities();
+                };
+
                 document.getElementById('dropZone').style.display = 'none';
                 document.getElementById('webcamWrapper').style.display = 'flex';
-            } catch(e) { showToast("Camera Access Denied", true); }
+            } catch(e) { showToast("Camera Access Denied or Error", true); }
         }
+
+        function checkCameraCapabilities() {
+            if (!stream) return;
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            
+            // Check for torch (Flashlight)
+            if (capabilities.torch) {
+                document.getElementById('torchBtn').style.display = 'block';
+                isTorchOn = false; // Reset state
+                document.getElementById('torchBtn').style.background = 'transparent';
+                document.getElementById('torchBtn').style.color = 'var(--text-main)';
+            } else {
+                document.getElementById('torchBtn').style.display = 'none';
+            }
+        }
+
+        // Camera Switch Button
+        document.getElementById('switchCamBtn').addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            startWebcam();
+        });
+
+        // Torch (Flashlight) Button
+        document.getElementById('torchBtn').addEventListener('click', async () => {
+            if (!stream) return;
+            const track = stream.getVideoTracks()[0];
+            try {
+                isTorchOn = !isTorchOn;
+                await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+                
+                // Toggle Button styling
+                let btn = document.getElementById('torchBtn');
+                btn.style.background = isTorchOn ? 'var(--primary)' : 'transparent';
+                btn.style.color = isTorchOn ? 'white' : 'var(--text-main)';
+            } catch (e) {
+                showToast("Flashlight not supported on this camera", true);
+            }
+        });
+
         document.getElementById('closeCamBtn').addEventListener('click', () => {
             if(stream) stream.getTracks().forEach(t=>t.stop());
             document.getElementById('webcamWrapper').style.display = 'none';
@@ -882,34 +1003,23 @@
             c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v,0,0);
             
             let img = new Image(); img.onload = () => {
-                state[activeSide].imgObj = img; state[activeSide].rawSrc = c.toDataURL('image/jpeg');
+                state[activeSide].imgObj = img; state[activeSide].rawSrc = c.toDataURL('image/png'); // Changed to PNG
                 if(stream) stream.getTracks().forEach(t=>t.stop());
                 document.getElementById('webcamWrapper').style.display = 'none';
                 document.getElementById('editorWrapper').style.display = 'block';
                 renderEditor(); saveHistory();
-            }; img.src = c.toDataURL('image/jpeg');
+            }; img.src = c.toDataURL('image/png'); // Changed to PNG
         });
 
         function saveHistory() {
             if(hIndex < history.length-1) history = history.slice(0, hIndex+1);
             let clone = JSON.parse(JSON.stringify({ 
-                f: {
-                    ...state.front,
-                    imgObj: null,
-                    rawSrc: state.front.rawSrc
-                }, 
-                b: {
-                    ...state.back,
-                    imgObj: null,
-                    rawSrc: state.back.rawSrc
-                }, 
+                f: { ...state.front, imgObj: null, rawSrc: state.front.rawSrc }, 
+                b: { ...state.back, imgObj: null, rawSrc: state.back.rawSrc }, 
+                customBgSrc: customBgImg ? customBgImg.src : null,
                 inputs: ids.map(id => ({
                     id,
-                    val: DOM[id]
-                        ? (DOM[id].type === 'checkbox'
-                            ? DOM[id].checked
-                            : DOM[id].value)
-                        : null
+                    val: DOM[id] ? (DOM[id].type === 'checkbox' ? DOM[id].checked : DOM[id].value) : null
                 }))
             }));
             history.push(clone); hIndex++;
@@ -930,12 +1040,22 @@
         function loadState(data) {
             data.inputs.forEach(i => { if(DOM[i.id]) { if(DOM[i.id].type==='checkbox') DOM[i.id].checked = i.val; else DOM[i.id].value = i.val; }});
             Object.assign(state.front, data.f); Object.assign(state.back, data.b);
+            
+            if(data.customBgSrc) {
+                let bg = new Image();
+                bg.onload = () => { customBgImg = bg; renderEditor(); };
+                bg.src = data.customBgSrc;
+            } else { customBgImg = null; }
+
             const rebuild = (side, src) => {
                 if(src) { let i = new Image(); i.onload = () => { state[side].imgObj = i; renderEditor(); }; i.src = src; }
             };
             rebuild('front', data.f.rawSrc); rebuild('back', data.b.rawSrc);
+            
             if(DOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
             if(DOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+            
+            DOM.bgType.dispatchEvent(new Event('change'));
         }
 
         document.getElementById('saveProjectBtn').addEventListener('click', () => {
