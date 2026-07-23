@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Passport Studio MAX v10.0 Ultra-HD (Riyanshi Computer Studio Edition)</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.3/dist/browser/bundle.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --font-display: 'Plus Jakarta Sans', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+        body.dark-theme {
+            --bg-color: #090d16;
+            --panel-bg: #111827;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1f2937;
+            --primary: #818cf8;
+            --accent: #a78bfa;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+        }
+        h1, h2, h3, h4, .font-display {
+            font-family: var(--font-display);
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .workspace-grid {
+            background-size: 24px 24px;
+            background-image: linear-gradient(to right, rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+        }
+        body.dark-theme .workspace-grid {
+            background-image: linear-gradient(to right, rgba(129, 140, 248, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(129, 140, 248, 0.03) 1px, transparent 1px);
+        }
+        .canvas-checkerboard {
+            background-color: #f1f5f9;
+            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%, #e2e8f0),
+                              linear-gradient(45deg, #e2e8f0 25%, #f1f5f9 25%, #f1f5f9 75%, #e2e8f0 75%, #e2e8f0);
+            background-size: 16px 16px;
+            background-position: 0 0, 8px 8px;
+        }
+        body.dark-theme .canvas-checkerboard {
+            background-color: #1e293b;
+            background-image: linear-gradient(45deg, #0f172a 25%, transparent 25%, transparent 75%, #0f172a 75%, #0f172a),
+                              linear-gradient(45deg, #0f172a 25%, #1e293b 25%, #1e293b 75%, #0f172a 75%, #0f172a);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        @keyframes cameraFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes cameraBlink {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px rgba(236,72,153,0.9)); }
+            50% { opacity: 0.4; filter: drop-shadow(0 0 2px rgba(236,72,153,0.2)); }
+        }
+        .animate-camera-float {
+            animation: cameraFloat 2.2s ease-in-out infinite;
+        }
+        .animate-camera-flash {
+            animation: cameraBlink 1.1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 select-none">
+
+    <input type="file" id="fileIn" accept="image/*,.heic,.heif" class="hidden">
+    <input type="file" id="cameraIn" accept="image/*" capture="environment" class="hidden">
+    <input type="file" id="fileBack" accept="image/*,.heic,.heif" class="hidden">
+    <input type="file" id="customBgFile" accept="image/*" class="hidden">
+    <input type="file" id="projectInput" accept=".studio" class="hidden">
+
+    <script>
+        // Inline Vector SVG Suits
+        const SUITS_SVG = {
+            suit1: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><path d="M150,160 L250,160 L230,280 L170,280 Z" fill="%23ffffff"/><path d="M194,185 L206,185 L212,280 L200,305 L188,280 Z" fill="%23b91c1c"/><path d="M90,200 C120,180 150,160 160,160 L185,280 L130,400 L50,400 Z" fill="%231e293b"/><path d="M310,200 C280,180 250,160 240,160 L215,280 L270,400 L350,400 Z" fill="%231e293b"/><path d="M160,160 L185,250 L180,280 Z" fill="%230f172a"/><path d="M240,160 L215,250 L220,280 Z" fill="%230f172a"/></svg>`,
+            suit2: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><path d="M155,160 L245,160 L225,270 L175,270 Z" fill="%23ffffff"/><path d="M195,185 L205,185 L208,260 L200,280 L192,260 Z" fill="%230f172a"/><path d="M95,200 C125,185 155,160 160,160 L182,270 L140,400 L60,400 Z" fill="%231e3a8a"/><path d="M305,200 C275,185 245,160 240,160 L218,270 L260,400 L340,400 Z" fill="%231e3a8a"/><path d="M160,160 L182,230 L180,270 Z" fill="%23172554"/><path d="M240,160 L218,230 L220,270 Z" fill="%23172554"/></svg>`,
+            suit3: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><path d="M140,170 C140,170 160,240 200,240 C240,240 260,170 260,170 L240,290 L160,290 Z" fill="%23fae8ff"/><path d="M90,210 C120,195 150,170 150,170 L175,290 L120,400 L50,400 Z" fill="%234c1d95"/><path d="M310,210 C280,195 250,170 250,170 L225,290 L280,400 L350,400 Z" fill="%234c1d95"/><path d="M150,170 L175,260 L170,290 Z" fill="%232e1065"/><path d="M250,170 L225,260 L230,290 Z" fill="%232e1065"/></svg>`
+        };
+
+        // PNG Suits Asset Mapping
+        const SUITS_PNG = {};
+        for(let i=1; i<=10; i++) SUITS_PNG[`mens${i}`] = `https://raw.githubusercontent.com/RiyanshiStudio/assets/main/suits/mens/mens${i}.png`;
+        for(let i=1; i<=10; i++) SUITS_PNG[`womens${i}`] = `https://raw.githubusercontent.com/RiyanshiStudio/assets/main/suits/womens/womens${i}.png`;
+        for(let i=1; i<=10; i++) SUITS_PNG[`kids${i}`] = `https://raw.githubusercontent.com/RiyanshiStudio/assets/main/suits/kids/kids${i}.png`;
+    </script>
+
+    <div class="max-w-[1700px] mx-auto px-2 sm:px-4 lg:px-8 pt-3">
+        
+        <div class="sticky top-2 z-50 bg-[#030816]/95 backdrop-blur-md text-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5 mb-4 shadow-[0_0_30px_rgba(59,130,246,0.35)] border border-blue-600/40 space-y-3">
+            
+            <!-- TOP ROW: LOGO LEFT & BUTTONS RIGHT -->
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-3 lg:gap-4 w-full">
+                
+                <!-- LEFT BRANDING & ADDRESS WITH SMART DSLR SVG CAMERA ICON -->
+                <div class="flex items-center gap-3 sm:gap-4 w-full lg:w-auto justify-start shrink-0">
+                    <div class="relative p-2 sm:p-2.5 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 rounded-2xl shadow-lg shadow-indigo-500/30 border border-cyan-500/40 shrink-0 animate-camera-float">
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-pink-500 rounded-full animate-ping opacity-90"></div>
+                        <div class="relative w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center">
+                            <svg class="w-full h-full text-cyan-400 filter drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22C12 18.6863 14.6863 16 18 16H22L25 10H39L42 16H46C49.3137 16 52 18.6863 52 22V46C52 49.3137 49.3137 52 46 52H18C14.6863 52 12 49.3137 12 46V22Z" fill="url(#camGrad)" stroke="#38bdf8" stroke-width="2"/>
+                                <circle cx="32" cy="34" r="13" fill="#030712" stroke="#ec4899" stroke-width="2.5"/>
+                                <circle cx="32" cy="34" r="9" fill="url(#lensGrad)"/>
+                                <circle cx="29" cy="31" r="3" fill="#ffffff" opacity="0.7"/>
+                                <circle cx="45" cy="22" r="2.5" fill="#f43f5e" class="animate-pulse"/>
+                                <rect x="18" y="21" width="6" height="3" rx="1.5" fill="#a855f7"/>
+                                <defs>
+                                    <linearGradient id="camGrad" x1="12" y1="10" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#1e1b4b"/>
+                                        <stop offset="0.5" stop-color="#0f172a"/>
+                                        <stop offset="1" stop-color="#312e81"/>
+                                    </linearGradient>
+                                    <linearGradient id="lensGrad" x1="23" y1="25" x2="41" y2="43" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#06b6d4"/>
+                                        <stop offset="0.5" stop-color="#3b82f6"/>
+                                        <stop offset="1" stop-color="#8b5cf6"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="space-y-0.5 text-left">
+                        <h1 class="text-base sm:text-xl md:text-2xl font-black tracking-wider bg-gradient-to-r from-pink-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent font-display uppercase leading-tight">
+                            RIYANSHI DIGITAL COMPUTER STUDIO <span class="text-cyan-400">MAX V10.0</span>
+                        </h1>
+                        <p class="text-[9px] sm:text-[11px] md:text-xs font-bold tracking-[0.12em] text-cyan-200/90 uppercase flex items-center gap-1 leading-tight">
+                            <span class="text-pink-400">✦ ✦</span> PRO PASSPORT & ID CARD PRINT STUDIO • ULTRA-HD LOSSLESS <span class="text-pink-400">✦ ✦</span>
+                        </p>
+                        <p class="text-[10px] sm:text-xs md:text-sm text-pink-400 font-bold tracking-wide flex items-center gap-1.5 leading-tight pt-0.5">
+                            <span>📍</span> <span class="text-amber-300 font-bold">पता:-</span> <span class="text-white font-semibold">बलुआ मध्य विद्यालय से सटे दक्षिण</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- RIGHT ACTION BUTTONS (ALL 3 BUTTONS + THEME IN 1 SINGLE ROW LINE) -->
+                <div class="flex items-center gap-2 shrink-0 w-full lg:w-auto justify-center lg:justify-end flex-wrap sm:flex-nowrap">
+                    <span id="autoSaveBadge" class="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-semibold hidden items-center gap-1 animate-pulse shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Saved
+                    </span>
+                    <button class="bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5 shrink-0" onclick="showShortcutGuide()">
+                        <span>⌨️</span> Shortcuts
+                    </button>
+                    <button class="bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md shrink-0" id="loadProjectBtn">
+                        📂 Load Project
+                    </button>
+                    <button class="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-violet-500/25 flex items-center gap-1.5 border border-violet-400/30 shrink-0" id="saveProjectBtn">
+                        💾 Save Project
+                    </button>
+                    <button class="bg-slate-900/90 hover:bg-slate-800 text-amber-400 text-sm font-bold w-9 h-9 rounded-xl flex items-center justify-center transition-all border border-slate-700/80 shadow-md shrink-0" id="themeBtn" title="Toggle Theme">
+                        ☀️
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- BOTTOM SUB-HEADER PANEL (ALL 4 CARDS LOCKED IN 1 SINGLE ROW) -->
+            <div class="grid grid-cols-4 gap-1.5 sm:gap-2.5 bg-[#081026] border border-blue-900/50 rounded-2xl p-1.5 sm:p-2 text-xs w-full">
+                <!-- Live Date Card -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 bg-slate-900/70 border border-slate-800/80 p-1.5 sm:p-2 rounded-xl min-w-0">
+                    <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-xs sm:text-base text-violet-300 shrink-0">
+                        📅
+                    </div>
+                    <div class="text-left min-w-0 overflow-hidden">
+                        <div class="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase truncate">आज की तारीख</div>
+                        <div class="font-extrabold text-white text-[10px] sm:text-xs truncate" id="headerLiveDate">--</div>
+                        <div class="text-[8px] sm:text-[9px] text-cyan-400 font-bold truncate" id="headerLiveDay">--</div>
+                    </div>
+                </div>
+
+                <!-- Live Time Card -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 bg-slate-900/70 border border-slate-800/80 p-1.5 sm:p-2 rounded-xl min-w-0">
+                    <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-xs sm:text-base text-indigo-300 shrink-0">
+                        🕒
+                    </div>
+                    <div class="text-left min-w-0 overflow-hidden">
+                        <div class="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase truncate">वर्तमान समय</div>
+                        <div class="font-black text-cyan-300 font-mono text-[10px] sm:text-xs md:text-sm truncate" id="headerLiveTime">--:--:--</div>
+                        <div class="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate">IST (भारत समय)</div>
+                    </div>
+                </div>
+
+                <!-- Computer Info Card -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 bg-slate-900/70 border border-slate-800/80 p-1.5 sm:p-2 rounded-xl min-w-0">
+                    <div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-xs sm:text-base text-blue-300 shrink-0">
+                        🖥️
+                    </div>
+                    <div class="text-left min-w-0 overflow-hidden">
+                        <div class="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase truncate">कंप्यूटर का नाम</div>
+                        <div class="font-extrabold text-white text-[10px] sm:text-xs truncate">RIYANSHI-PC</div>
+                        <div class="text-[8px] sm:text-[9px] text-slate-400 font-semibold truncate">Windows 11 Pro</div>
+                    </div>
+                </div>
+
+                <!-- Studio Digital Solution Hub Logo -->
+                <div class="flex items-center justify-between bg-gradient-to-r from-slate-950 to-indigo-950 border border-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl shadow-inner min-w-0">
+                    <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span class="text-xs sm:text-lg shrink-0">🖥️</span>
+                        <div class="text-left min-w-0 overflow-hidden">
+                            <div class="font-black text-[9px] sm:text-xs text-white tracking-wider truncate">RIYANSHI</div>
+                            <div class="font-black text-[7px] sm:text-[9px] text-pink-500 tracking-wider truncate">COMPUTER</div>
+                        </div>
+                    </div>
+                    <div class="text-[7px] sm:text-[8px] font-black text-cyan-400 uppercase tracking-widest text-right leading-tight shrink-0 hidden sm:block">
+                        DIGITAL SOLUTION HUB
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="flex flex-row w-full gap-3 md:gap-6 items-start overflow-x-hidden">
+            
+            <div class="w-[40%] md:w-[35%] xl:w-[25%] min-w-[260px] shrink-0 bg-[var(--panel-bg)] rounded-2xl p-4 md:p-5 shadow-2xl border border-[var(--border)] max-h-[90vh] overflow-y-auto space-y-4 transition-all">
+                
+                <!-- Quick Undo/Redo & Compare -->
+                <div class="grid grid-cols-3 gap-1.5 md:gap-2">
+                    <button class="flex items-center justify-center gap-1 px-2 py-2 border border-[var(--border)] rounded-xl hover:border-violet-500 text-[10px] md:text-xs font-bold transition bg-[var(--bg-color)] text-[var(--text-main)]" id="undoBtn">
+                        ↩️ Undo
+                    </button>
+                    <button class="flex items-center justify-center gap-1 px-2 py-2 border border-[var(--border)] rounded-xl hover:border-violet-500 text-[10px] md:text-xs font-bold transition bg-[var(--bg-color)] text-[var(--text-main)]" id="redoBtn">
+                        ↪️ Redo
+                    </button>
+                    <button class="flex items-center justify-center gap-1 px-1 py-2 border border-violet-500/40 rounded-xl hover:border-violet-600 text-[9px] md:text-[11px] font-extrabold transition bg-violet-500/10 text-violet-500" id="compareBtn" title="Hold to see original unedited image">
+                        👁️ Compare
+                    </button>
+                </div>
+
+                <div class="p-3 md:p-4 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 border border-violet-500/20 rounded-2xl space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-violet-500 font-display">🧠 AI Biometric Engine</span>
+                    </div>
+                    
+                    <div class="p-2.5 bg-slate-950 text-white rounded-xl text-center shadow-inner border border-slate-900" id="aiScoreBox">
+                        <div class="text-[11px] md:text-xs font-black tracking-wide" id="scoreText">Quality: Not Analyzed</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5" id="blurText">Scan landmarks to align passport frame</div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-[10px] md:text-xs transition-all shadow-md flex items-center justify-center gap-1.5" id="aiFullFixBtn">
+                            ⚡ Auto-Center & Align
+                        </button>
+                        <button class="w-full bg-[var(--bg-color)] hover:bg-slate-200 dark:hover:bg-slate-800 border border-violet-500/30 text-violet-500 dark:text-violet-400 font-extrabold py-2 px-3 rounded-xl text-[10px] md:text-xs transition-all flex items-center justify-center gap-1.5" id="removeBgBtn">
+                            ✨ Remove BG (Ultra-HD AI)
+                        </button>
+                    </div>
+                    <div id="aiStatus" class="p-2 bg-violet-500/10 text-violet-400 text-[10px] font-bold text-center rounded-xl border border-violet-500/20 hidden animate-pulse">
+                        Initializing neural models...
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-3">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-[var(--text-muted)] font-display">1. 🖨️ PRINT & PRESETS</span>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] md:text-[10px] font-extrabold text-[var(--text-muted)] uppercase">Paper Size</label>
+                            <select id="paperSize" class="w-full text-[10px] md:text-xs p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                                <option value="A4">A4 (210x297mm)</option>
+                                <option value="4x6">4x6 inch</option>
+                                <option value="5x7">5x7 inch</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] md:text-[10px] font-extrabold text-[var(--text-muted)] uppercase">Orientation</label>
+                            <select id="paperOrient" class="w-full text-[10px] md:text-xs p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                                <option value="p">Portrait 📄</option>
+                                <option value="l">Landscape 📑</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[9px] md:text-[10px] font-extrabold text-[var(--text-muted)] uppercase">Photo Specification</label>
+                        <select id="photoSize" class="w-full text-[10px] md:text-xs p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                            <option value="35x45">India Passport / UK / Schengen (3.5x4.5cm)</option>
+                            <option value="25x35">India PAN Card (2.5x3.5cm)</option>
+                            <option value="50.8x50.8">USA Visa (2x2 inch / 5x5cm)</option>
+                            <option value="50x70">Canada Visa (5x7cm)</option>
+                            <option value="40x50">UAE Visa (4x5cm)</option>
+                            <option value="33x48">China Visa (3.3x4.8cm)</option>
+                            <option value="20x25">Stamp Size (2x2.5cm)</option>
+                            <option value="25x30">Ayushman / e-Shram Card (2.5x3cm)</option>
+                            <option value="AADHAR">Aadhar Card / Plastic ID (8.56x5.4cm)</option>
+                            <option value="CUSTOM">Custom Dimensions (mm)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 hidden" id="customSizeBox">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-[var(--text-muted)]">W (mm)</label>
+                            <input type="number" id="cWidth" value="35" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)]">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-[var(--text-muted)]">H (mm)</label>
+                            <input type="number" id="cHeight" value="45" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)]">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 hidden" id="aadharModeBox">
+                        <label class="text-[9px] font-bold text-[var(--text-muted)]">Aadhar Layout Mode</label>
+                        <select id="aadharMode" class="w-full text-[10px] p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                            <option value="vert">Front & Back (Top-Bottom Stack)</option>
+                            <option value="horiz">Front & Back (Side-by-Side)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Copies (0=Fill)</label>
+                            <input type="number" id="copies" value="0" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Gap (mm)</label>
+                            <input type="number" id="gap" value="3" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-[10px] font-bold py-0.5 text-[var(--text-muted)]">
+                        <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                            <input type="checkbox" id="border" checked class="w-3.5 h-3.5 rounded accent-violet-600"> Sheet Border
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                            <input type="checkbox" id="cropMarks" checked class="w-3.5 h-3.5 rounded accent-violet-600"> Crop Marks
+                        </label>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Watermark Text</label>
+                        <input type="text" id="watermarkText" placeholder="E.g. Riyanshi Studio" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)] font-semibold placeholder-slate-400">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button class="bg-violet-600 hover:bg-violet-700 text-white font-bold py-1.5 px-2 rounded-xl text-[9px] md:text-xs transition-all shadow-md" id="saveSettingsBtn">
+                            💾 Save Settings
+                        </button>
+                        <button class="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-bold py-1.5 px-2 rounded-xl text-[9px] md:text-xs transition-all" id="resetBtn">
+                            🗑️ Reset Preset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-3">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-[var(--text-muted)] font-display">2. 👔 SUIT & FIT ADJUSTER</span>
+                    
+                    <div class="space-y-1">
+                        <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Suit Overlay Library</label>
+                        <select id="suit" class="w-full text-[10px] p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                            <option value="none">No Suit Overlay</option>
+                            <optgroup label="Vector SVG Suits (Instant)">
+                                <option value="suit1">Charcoal Suit & Red Tie (SVG)</option>
+                                <option value="suit2">Royal Navy Coat (SVG)</option>
+                                <option value="suit3">Women's Purple Suit (SVG)</option>
+                            </optgroup>
+                            <optgroup label="Men's Formal Suits (Boy/Man)">
+                                <option value="mens1">Mens Formal Suit 1</option>
+                                <option value="mens2">Mens Formal Suit 2</option>
+                                <option value="mens3">Mens Formal Suit 3</option>
+                                <option value="mens4">Mens Formal Suit 4</option>
+                                <option value="mens5">Mens Formal Suit 5</option>
+                                <option value="mens6">Mens Formal Suit 6</option>
+                                <option value="mens7">Mens Formal Suit 7</option>
+                                <option value="mens8">Mens Formal Suit 8</option>
+                                <option value="mens9">Mens Formal Suit 9</option>
+                                <option value="mens10">Mens Formal Suit 10</option>
+                            </optgroup>
+                            <optgroup label="Women's Sarees & Kurtis">
+                                <option value="womens1">Womens Dress 1</option>
+                                <option value="womens2">Womens Dress 2</option>
+                                <option value="womens3">Womens Dress 3</option>
+                                <option value="womens4">Womens Dress 4</option>
+                                <option value="womens5">Womens Dress 5</option>
+                                <option value="womens6">Womens Dress 6</option>
+                                <option value="womens7">Womens Dress 7</option>
+                                <option value="womens8">Womens Dress 8</option>
+                                <option value="womens9">Womens Dress 9</option>
+                                <option value="womens10">Womens Dress 10</option>
+                            </optgroup>
+                            <optgroup label="Kid's Uniforms & Shirts">
+                                <option value="kids1">Kids Uniform 1</option>
+                                <option value="kids2">Kids Uniform 2</option>
+                                <option value="kids3">Kids Uniform 3</option>
+                                <option value="kids4">Kids Uniform 4</option>
+                                <option value="kids5">Kids Uniform 5</option>
+                                <option value="kids6">Kids Uniform 6</option>
+                                <option value="kids7">Kids Uniform 7</option>
+                                <option value="kids8">Kids Uniform 8</option>
+                                <option value="kids9">Kids Uniform 9</option>
+                                <option value="kids10">Kids Uniform 10</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Suit Alignment Controls -->
+                    <div class="p-2.5 bg-[var(--bg-color)] border border-[var(--border)] rounded-xl space-y-2">
+                        <span class="text-[9px] font-black uppercase text-violet-500 block">Suit Neck & Scale Adjuster</span>
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[9px] font-bold text-[var(--text-muted)]">
+                                <span>Suit Scale</span>
+                                <span id="lbl-suitScale" class="text-violet-500">100%</span>
+                            </div>
+                            <input type="range" id="suitScale" min="50" max="180" value="100" class="w-full accent-violet-600 h-1">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                                <label class="text-[8px] font-bold text-[var(--text-muted)] uppercase">Suit Pan X</label>
+                                <input type="range" id="suitPanX" min="-150" max="150" value="0" class="w-full accent-violet-600 h-1">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[8px] font-bold text-[var(--text-muted)] uppercase">Suit Pan Y</label>
+                                <input type="range" id="suitPanY" min="-150" max="150" value="0" class="w-full accent-violet-600 h-1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Name Tag</label>
+                            <input type="text" id="nameTag" placeholder="E.g. Rahul" class="w-full text-[10px] p-2 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)] font-semibold placeholder-slate-400">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Date Tag</label>
+                            <input type="date" id="dateTag" class="w-full text-[10px] p-1.5 border border-[var(--border)] rounded-xl bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 text-[10px] font-bold py-0.5 text-[var(--text-muted)]">
+                        <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                            <input type="checkbox" id="guideFace" checked class="w-3.5 h-3.5 rounded accent-violet-600"> Face Oval
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                            <input type="checkbox" id="guideEyes" checked class="w-3.5 h-3.5 rounded accent-violet-600"> Eye Line
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-2.5">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-[var(--text-muted)] font-display">3. 💧 BACKDROP & LENS FX</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-[var(--text-muted)]">BG Blur</label>
+                            <input type="range" id="bgBlur" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-bold text-[var(--text-muted)]">Lens Blur</label>
+                            <input type="range" id="lensBlur" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                    </div>
+                    <button class="w-full bg-[var(--bg-color)] border border-[var(--border)] text-[9px] font-bold py-1 rounded-xl text-[var(--text-main)]" onclick="resetGroup('fx')">
+                        🔄 Reset Blur FX
+                    </button>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-2.5">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-violet-500 font-display">4. 🪄 CHROMA KEYER</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="flex items-center justify-center gap-1.5 py-1.5 px-2 border border-[var(--border)] rounded-xl text-[10px] font-bold transition bg-[var(--bg-color)] text-[var(--text-main)] tool-btn" id="tool_wand" onclick="setTool('wand')">
+                            🪄 Magic Wand
+                        </button>
+                        <div class="flex items-center justify-between border border-[var(--border)] px-2 py-1 rounded-xl bg-[var(--bg-color)]">
+                            <span class="text-[9px] font-bold text-[var(--text-muted)]">Color</span>
+                            <div class="w-4 h-4 rounded-md border border-slate-400" id="wandKeyColorShow" style="background-color: #ffffff;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Tol. <span id="val-tolerance" class="text-violet-500">35</span></label>
+                            <input type="range" id="wandTolerance" min="5" max="150" value="35" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Fthr. <span id="val-feather" class="text-violet-500">2px</span></label>
+                            <input type="range" id="wandFeather" min="0" max="10" value="2" class="w-full accent-violet-600">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-violet-500 font-display">5. 🖌️ BRUSH TOOLS</span>
+                        <div class="flex items-center gap-1 bg-[var(--bg-color)] border border-[var(--border)] px-1.5 py-0.5 rounded-lg">
+                            <span class="text-[8px] font-bold text-[var(--text-muted)] uppercase">R:</span>
+                            <span class="text-[9px] font-black text-violet-500" id="lbl-brushRadius">25</span>
+                            <input type="range" id="brushRadius" min="5" max="100" value="25" class="w-10 h-1 accent-violet-600">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-violet-500 rounded-xl text-[9px] font-bold transition bg-violet-500 text-white tool-btn" id="tool_pan" onclick="setTool('pan')">
+                            ✋ Pan
+                        </button>
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-[var(--border)] rounded-xl text-[9px] font-bold transition bg-[var(--bg-color)] text-[var(--text-main)] tool-btn" id="tool_spot" onclick="setTool('spot')">
+                            🩹 Spot
+                        </button>
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-[var(--border)] rounded-xl text-[9px] font-bold transition bg-[var(--bg-color)] text-[var(--text-main)] tool-btn" id="tool_heal" onclick="setTool('heal')">
+                            🪄 Heal
+                        </button>
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-[var(--border)] rounded-xl text-[9px] font-bold transition bg-[var(--bg-color)] text-[var(--text-main)] tool-btn" id="tool_clone" title="Shift+Click on canvas to set clone anchor">
+                            🖱️ Clone
+                        </button>
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-[var(--border)] rounded-xl text-[9px] font-bold transition bg-[var(--bg-color)] text-[var(--text-main)] tool-btn" id="tool_liquify">
+                            🌀 Liq.
+                        </button>
+                        <button class="flex items-center justify-center gap-1 py-1.5 border border-pink-500/50 rounded-xl text-[9px] font-bold transition bg-pink-500/10 text-pink-500 tool-btn" id="tool_bgEraser">
+                            🧽 Eraser
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-3">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-[var(--text-muted)] font-display">6. ⚙️ TRANSFORMS & FLIPS</span>
+                    
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[9px] font-extrabold text-[var(--text-muted)] uppercase">
+                            <span>Zoom Scale</span>
+                            <span id="val-zoom" class="text-violet-500">100%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="w-6 h-6 flex items-center justify-center rounded-lg bg-[var(--bg-color)] border border-[var(--border)] font-bold text-xs" onclick="adjust('zoom', -5)">-</button>
+                            <input type="range" id="zoom" min="20" max="400" value="100" class="flex-1 accent-violet-600">
+                            <button class="w-6 h-6 flex items-center justify-center rounded-lg bg-[var(--bg-color)] border border-[var(--border)] font-bold text-xs" onclick="adjust('zoom', 5)">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Flips & 90 Rotations -->
+                    <div class="grid grid-cols-4 gap-1">
+                        <button class="py-1 px-1 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] font-bold hover:border-violet-500" onclick="toggleFlip('H')">🪞 Flip H</button>
+                        <button class="py-1 px-1 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] font-bold hover:border-violet-500" onclick="toggleFlip('V')">🔃 Flip V</button>
+                        <button class="py-1 px-1 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] font-bold hover:border-violet-500" onclick="rotate90(-90)">↺ -90°</button>
+                        <button class="py-1 px-1 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] font-bold hover:border-violet-500" onclick="rotate90(90)">↻ +90°</button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Pan X</label>
+                            <input type="range" id="panX" min="-500" max="500" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Pan Y</label>
+                            <input type="range" id="panY" min="-500" max="500" value="0" class="w-full accent-violet-600">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Angle Deg</label>
+                            <input type="range" id="rotation" min="-180" max="180" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <button class="w-full bg-[var(--bg-color)] border border-[var(--border)] text-[9px] font-bold py-1 rounded-xl text-[var(--text-main)] self-end" onclick="resetGroup('transform')">
+                            🔄 Reset Pos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-3">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-[var(--text-muted)] font-display">7. 🎨 COLOR & FILTERS</span>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Background</label>
+                            <select id="bgType" class="w-full text-[10px] p-2 rounded-xl border border-[var(--border)] bg-[var(--bg-color)] text-[var(--text-main)] font-semibold">
+                                <option value="original">Original</option>
+                                <option value="solid">Solid Color</option>
+                                <option value="gradient">Gradient Studio</option>
+                                <option value="custom">Upload Custom</option>
+                                <option value="transparent">Transparent</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[9px] font-extrabold text-[var(--text-muted)] uppercase">Backdrop Fill</label>
+                            <input type="color" id="bgColor" value="#ffffff" class="w-full h-8 p-1 border border-[var(--border)] rounded-xl cursor-pointer bg-[var(--bg-color)]">
+                            <button id="customBgBtn" class="w-full text-[10px] font-bold py-1.5 px-2 bg-[var(--bg-color)] border border-[var(--border)] rounded-xl hidden">🖼️ Custom</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Brightness</label>
+                            <input type="range" id="bright" min="0" max="200" value="100" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Contrast</label>
+                            <input type="range" id="cont" min="0" max="200" value="100" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Saturation</label>
+                            <input type="range" id="sat" min="0" max="200" value="100" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase">Sharpness</label>
+                            <input type="range" id="sharp" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 text-[10px] font-bold py-0.5 text-[var(--text-muted)]">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" id="bwMode" class="w-3.5 h-3.5 rounded accent-violet-600"> B&W
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-pink-500">
+                            <input type="checkbox" id="cinematicMode" class="w-3.5 h-3.5 rounded accent-pink-500"> 🎬 Cine
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-violet-500">
+                            <input type="checkbox" id="aiWhiteBal" class="w-3.5 h-3.5 rounded accent-violet-500"> 💡 AWB
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-amber-600">
+                            <input type="checkbox" id="sepiaMode" class="w-3.5 h-3.5 rounded accent-amber-600"> 🤎 Sepia
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-indigo-500">
+                            <input type="checkbox" id="invertMode" class="w-3.5 h-3.5 rounded accent-indigo-500"> 👻 Invert
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer text-orange-500">
+                            <input type="checkbox" id="vintageMode" class="w-3.5 h-3.5 rounded accent-orange-500"> 🎞️ Vintage
+                        </label>
+                    </div>
+                    <button class="w-full bg-[var(--bg-color)] border border-[var(--border)] text-[9px] font-bold py-1 rounded-xl text-[var(--text-main)] mt-1" onclick="resetGroup('filters')">
+                        🔄 Reset Color Filters
+                    </button>
+                </div>
+
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-3">
+                    <span class="text-[10px] md:text-xs font-extrabold uppercase tracking-widest text-pink-500 font-display">✨ BIOMETRIC BEAUTY</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Skin <span id="lbl-skinSmooth" class="text-violet-500 font-bold">0</span></label>
+                            <input type="range" id="skinSmooth" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Teeth <span id="lbl-teethFix" class="text-violet-500 font-bold">0</span></label>
+                            <input type="range" id="teethFix" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Eye <span id="lbl-eyeBright" class="text-violet-500 font-bold">0</span></label>
+                            <input type="range" id="eyeBright" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[8px] font-extrabold text-[var(--text-muted)] uppercase flex justify-between">Slim <span id="lbl-faceSlim" class="text-violet-500 font-bold">0</span></label>
+                            <input type="range" id="faceSlim" min="0" max="100" value="0" class="w-full accent-violet-600">
+                        </div>
+                    </div>
+                    <button class="w-full bg-[var(--bg-color)] border border-[var(--border)] text-[9px] font-bold py-1 rounded-xl text-[var(--text-main)] mt-1" onclick="resetGroup('beauty')">
+                        🔄 Reset Beauty Adjusters
+                    </button>
+                </div>
+
+                <!-- QUICK AI FIXES -->
+                <div class="border-t border-[var(--border)] pt-3.5 space-y-2">
+                    <span class="text-[9px] md:text-xs font-black uppercase tracking-wider text-violet-500">⚡ QUICK TOUCH-UPS</span>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button class="py-1.5 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] md:text-[11px] font-bold hover:border-violet-500 text-[var(--text-main)]" id="btnRedEye" onclick="runAIFix('redEye')">🔴 Eye</button>
+                        <button class="py-1.5 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] md:text-[11px] font-bold hover:border-violet-500 text-[var(--text-main)]" id="btnGlass" onclick="runAIFix('glass')">👓 Glare</button>
+                        <button class="py-1.5 bg-[var(--bg-color)] border border-[var(--border)] rounded-lg text-[9px] md:text-[11px] font-bold hover:border-violet-500 text-[var(--text-main)]" id="btnHair" onclick="runAIFix('hair')">💇‍♂️ Hair</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="w-[60%] md:w-[65%] xl:w-[75%] flex-1 bg-[var(--panel-bg)] rounded-2xl p-4 md:p-6 shadow-2xl border border-[var(--border)] flex flex-col items-center justify-center min-h-[85vh] workspace-grid relative transition-all">
+                
+                <!-- UPLOAD ZONE -->
+                <div class="w-full max-w-xl p-4 md:p-8 border-2 border-dashed border-violet-500/40 hover:border-violet-500 bg-violet-500/5 hover:bg-violet-500/10 rounded-2xl text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center space-y-3 md:space-y-4 shadow-sm" id="dropZone" onclick="document.getElementById('fileIn').click()">
+                    <span class="text-4xl md:text-6xl animate-bounce">📁</span>
+                    <div>
+                        <h3 class="text-sm md:text-lg font-bold text-violet-500 font-display">Upload Main Photo (Full Resolution)</h3>
+                        <p class="text-[9px] md:text-xs text-[var(--text-muted)] mt-1">Supports Original JPG, PNG, WEBP & iOS HEIC</p>
+                    </div>
+                    
+                    <div class="text-[9px] md:text-[11px] font-extrabold text-slate-400 tracking-widest uppercase">━━ OR ━━</div>
+                    <button class="bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-[10px] md:text-xs py-2 md:py-3 px-4 md:px-6 rounded-xl shadow-lg shadow-violet-500/20 flex items-center gap-2 transition-all" onclick="event.stopPropagation(); startNativeCamera();">
+                        📷 Open Camera
+                    </button>
+                </div>
+
+                <div id="editorWrapper" class="w-full hidden text-center space-y-3 md:space-y-5 transition-all">
+                    
+                    <div class="flex bg-[var(--bg-color)] p-1 rounded-xl max-w-md mx-auto border border-[var(--border)] shadow-sm">
+                        <button class="flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-extrabold transition-all bg-[var(--panel-bg)] text-violet-600 shadow-sm" id="tabFront" onclick="switchSide('front')">🧑 Front View</button>
+                        <button class="flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-bold transition-all text-[var(--text-muted)]" id="tabBack" onclick="switchSide('back')">💳 Back View (ID Card)</button>
+                    </div>
+
+                    <div class="relative inline-block mx-auto rounded-2xl overflow-hidden border border-[var(--border)] shadow-2xl canvas-checkerboard max-w-full">
+                        <canvas id="singleCanvas" class="block max-w-full h-auto cursor-grab touch-none"></canvas>
+                        <div id="cloneAnchorIndicator" class="absolute w-4 h-4 md:w-6 md:h-6 border-2 border-dashed border-violet-500 rounded-full hidden pointer-events-none flex items-center justify-center shadow-[0_0_10px_rgba(139,92,246,0.5)]">
+                            <span class="text-[10px] md:text-xs font-black text-violet-500">+</span>
+                        </div>
+                    </div>
+                    
+                    <!-- MASTER RESET BUTTON -->
+                    <div class="flex justify-center w-full mt-2">
+                        <button class="bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-extrabold text-[10px] md:text-xs py-2 px-4 rounded-xl transition-all flex items-center gap-1.5 shadow-sm" onclick="resetMasterImage()">
+                            🔄 Master Reset (Original Photo)
+                        </button>
+                    </div>
+
+                    <div id="backUploader" class="hidden max-w-sm mx-auto animate-fade-in">
+                        <button class="w-full bg-[var(--bg-color)] hover:bg-slate-200 dark:hover:bg-slate-800 border-2 border-dashed border-[var(--border)] text-[10px] md:text-xs font-extrabold py-2.5 md:py-3.5 px-3 md:px-5 rounded-xl transition-all text-[var(--text-main)]" onclick="document.getElementById('fileBack').click()">
+                            💳 Upload ID Back-Side Photo
+                        </button>
+                    </div>
+
+                    <div class="bg-[var(--bg-color)] p-3 md:p-4 rounded-2xl max-w-xl mx-auto border border-[var(--border)] flex flex-col xl:flex-row items-center justify-between gap-3 md:gap-4 shadow-sm text-center xl:text-left">
+                        <div class="space-y-0.5">
+                            <span class="text-[10px] md:text-xs font-extrabold block text-[var(--text-main)]">Print Queue Manager</span>
+                        </div>
+                        <div class="flex gap-2 w-full xl:w-auto shrink-0 justify-center">
+                            <button class="bg-pink-500 hover:bg-pink-600 text-white font-extrabold text-[9px] md:text-xs px-3 md:px-4.5 py-2 md:py-2.5 rounded-xl transition-all shadow-md flex items-center gap-1.5" onclick="addToQueue()">
+                                ➕ Append <span class="bg-white text-pink-600 px-1.5 md:px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-black" id="queueCount">0</span>
+                            </button>
+                            <button class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-[9px] md:text-xs font-bold px-2.5 md:px-3 py-2 md:py-2.5 rounded-xl transition-all text-[var(--text-main)] border border-[var(--border)]" onclick="clearQueue()">
+                                🗑️ Empty
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-2 md:gap-3 justify-center max-w-xl mx-auto">
+                        <button class="flex-1 bg-violet-600 hover:bg-violet-700 text-white font-extrabold py-2.5 md:py-3.5 px-4 md:px-6 rounded-2xl shadow-lg transition-all text-[10px] md:text-xs tracking-wider uppercase font-display" id="generateBtn">
+                            🖨️ Compile High-Res Sheet
+                        </button>
+                        <button class="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2.5 md:py-3.5 px-4 md:px-6 rounded-2xl transition-all text-[10px] md:text-xs tracking-wider uppercase font-display" onclick="clearPhoto()">
+                            ❌ Close Project
+                        </button>
+                    </div>
+
+                </div>
+
+                <div class="w-full mt-4 md:mt-6 flex flex-col items-center">
+                    <canvas id="sheetCanvas" class="max-w-full hidden border border-[var(--border)] shadow-2xl rounded-xl"></canvas>
+                    
+                    <div class="hidden flex-col items-center gap-3 mt-4 w-full max-w-2xl" id="actionBar">
+                        <div class="flex flex-wrap gap-2 md:gap-3 justify-center w-full">
+                            <button class="flex-1 min-w-[130px] bg-slate-800 hover:bg-slate-700 text-slate-100 text-[10px] md:text-xs font-bold py-2.5 md:py-3.5 px-3 md:px-4 rounded-xl transition-all border border-slate-700 shadow-sm" onclick="downloadFile('png')">
+                                ⬇️ Ultra PNG Sheet
+                            </button>
+                            <button class="flex-1 min-w-[130px] bg-violet-600 hover:bg-violet-700 text-white text-[10px] md:text-xs font-bold py-2.5 md:py-3.5 px-3 md:px-4 rounded-xl transition-all shadow-md" onclick="downloadPDF()">
+                                📄 Compact HD PDF (Light MB)
+                            </button>
+                            <button class="flex-1 min-w-[130px] bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] md:text-xs font-bold py-2.5 md:py-3.5 px-3 md:px-4 rounded-xl transition-all shadow-md" onclick="printSheet()">
+                                🖨️ Direct Print
+                            </button>
+                        </div>
+
+                        <!-- SINGLE HD PHOTO DOWNLOAD BAR WITH BORDER & CORNER CUT-MARKS OPTIONS -->
+                        <div class="w-full bg-[var(--bg-color)] border border-[var(--border)] rounded-2xl p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
+                            <div class="flex flex-wrap items-center gap-3 text-[10px] md:text-xs font-bold text-[var(--text-muted)]">
+                                <span class="text-violet-500 font-extrabold uppercase">Single Photo Extras:</span>
+                                <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                                    <input type="checkbox" id="singleBorder" checked class="w-3.5 h-3.5 rounded accent-violet-600" onchange="renderEditor()"> 🔲 Border
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-main)]">
+                                    <input type="checkbox" id="singleCutMarks" checked class="w-3.5 h-3.5 rounded accent-violet-600" onchange="renderEditor()"> ✂️ Corner Lines (Cut Marks)
+                                </label>
+                            </div>
+                            <button class="w-full md:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-[10px] md:text-xs py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="downloadSingleHD()">
+                                🖼️ Download Single HD Photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="fixed bottom-4 md:bottom-6 right-4 md:right-6 px-4 md:px-6 py-3 md:py-4 bg-slate-900 text-white font-bold rounded-2xl text-[10px] md:text-xs shadow-2xl transform translate-y-24 opacity-0 transition duration-300 z-[99999] flex items-center gap-2 md:gap-3 border border-slate-700" id="toast">
+        <span id="toastIcon">✨</span> <span id="toastMsg">Workspace Processed!</span>
+    </div>
+
+    <div id="customModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-[999999] p-4">
+        <div class="bg-[var(--panel-bg)] border border-[var(--border)] max-w-md w-full rounded-2xl p-5 md:p-6 shadow-2xl text-center space-y-3 md:space-y-4 transform scale-95 opacity-0 transition-all duration-300" id="modalCard">
+            <div class="text-2xl md:text-3xl" id="modalIcon">💬</div>
+            <h3 class="text-base md:text-lg font-bold text-[var(--text-main)] font-display" id="modalTitle">Confirm Action</h3>
+            <p class="text-[10px] md:text-xs text-[var(--text-muted)] leading-relaxed" id="modalBody">Are you sure you want to proceed?</p>
+            <div class="flex gap-2 md:gap-3 pt-2" id="modalButtons"></div>
+        </div>
+    </div>
+
+    <script>
+        const singleC = document.getElementById('singleCanvas');
+        const sCtx = singleC.getContext('2d', { willReadFrequently: true });
+        const sheetC = document.getElementById('sheetCanvas');
+        const sheetCtx = sheetC.getContext('2d', { willReadFrequently: true });
+        
+        // High DPI (600 DPI) for maximum resolution
+        const DPI = 600;
+        const MM_TO_PX = DPI / 25.4;
+        
+        let state = {
+            front: { imgObj: null, rawSrc: null, originalSrc: null, baseOriginal: null, zoom: 100, panX: 0, panY: 0, rotation: 0, flipH: false, flipV: false, suitScale: 100, suitPanX: 0, suitPanY: 0, bright: 100, cont: 100, sat: 100, sharp: 0, aiData: null, editLayer: null, skinSmooth: 0, teethFix: 0, eyeBright: 0, faceSlim: 0, bgBlur: 0, lensBlur: 0 },
+            back: { imgObj: null, rawSrc: null, originalSrc: null, baseOriginal: null, zoom: 100, panX: 0, panY: 0, rotation: 0, flipH: false, flipV: false, suitScale: 100, suitPanX: 0, suitPanY: 0, bright: 100, cont: 100, sat: 100, sharp: 0, aiData: null, editLayer: null, skinSmooth: 0, teethFix: 0, eyeBright: 0, faceSlim: 0, bgBlur: 0, lensBlur: 0 }
+        };
+        let activeSide = 'front';
+        let customBgImg = null;
+        let aiModelsLoaded = false;
+        let isComparing = false;
+        
+        let activeTool = 'pan'; 
+        let cloneSource = null; 
+        let isDragging = false; 
+        let startX, startY;
+        
+        let history = []; 
+        let hIndex = -1;
+        let printQueue = [];
+
+        const ids = ['zoom','panX','panY','rotation','suitScale','suitPanX','suitPanY','bright','cont','sat','sharp','bgType','bgColor','suit','nameTag','dateTag','guideFace','guideEyes','bwMode','cinematicMode','aiWhiteBal','sepiaMode','invertMode','vintageMode','paperSize','paperOrient','photoSize','copies','gap','border','cropMarks','cWidth','cHeight','aadharMode','watermarkText','skinSmooth','teethFix','eyeBright','faceSlim','bgBlur','lensBlur','wandTolerance','wandFeather'];
+        
+        const studioDOM = {}; 
+        ids.forEach(id => studioDOM[id] = document.getElementById(id));
+
+        const safeStorage = {
+            getItem(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
+            setItem(key, value) { try { localStorage.setItem(key, value); } catch(e) {} },
+            removeItem(key) { try { localStorage.removeItem(key); } catch(e) {} }
+        };
+
+        function updateLiveHeaderClock() {
+            const now = new Date();
+            const hindiDays = ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'];
+            const hindiMonths = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
+            
+            const dayStr = hindiDays[now.getDay()];
+            const dateNum = now.getDate();
+            const monthStr = hindiMonths[now.getMonth()];
+            const yearNum = now.getFullYear();
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const strHours = String(hours).padStart(2, '0');
+            
+            const timeStr = `${strHours}:${minutes}:${seconds} ${ampm}`;
+            const dateStr = `${dateNum} ${monthStr} ${yearNum}`;
+            
+            const liveDateEl = document.getElementById('headerLiveDate');
+            const liveDayEl = document.getElementById('headerLiveDay');
+            const liveTimeEl = document.getElementById('headerLiveTime');
+            
+            if(liveDateEl) liveDateEl.innerText = dateStr;
+            if(liveDayEl) liveDayEl.innerText = dayStr;
+            if(liveTimeEl) liveTimeEl.innerText = timeStr;
+        }
+        setInterval(updateLiveHeaderClock, 1000);
+        updateLiveHeaderClock();
+
+        function showModal({ title, body, icon = "❓", confirmText = "Confirm", cancelText = "Cancel", onConfirm, onCancel }) {
+            const modal = document.getElementById('customModal');
+            const card = document.getElementById('modalCard');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = body;
+            document.getElementById('modalIcon').innerText = icon;
+            
+            const btnContainer = document.getElementById('modalButtons');
+            btnContainer.innerHTML = "";
+
+            if (onCancel) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = "flex-1 bg-[var(--bg-color)] border border-[var(--border)] text-[var(--text-main)] hover:bg-slate-100 font-bold py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs transition-all";
+                cancelBtn.innerText = cancelText;
+                cancelBtn.onclick = () => { closeModal(); if (onCancel) onCancel(); };
+                btnContainer.appendChild(cancelBtn);
+            }
+
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = "flex-1 bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs transition-all shadow-md shadow-violet-500/20";
+            confirmBtn.innerText = confirmText;
+            confirmBtn.onclick = () => { closeModal(); if (onConfirm) onConfirm(); };
+            btnContainer.appendChild(confirmBtn);
+
+            modal.style.display = "flex";
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 50);
+        }
+
+        function closeModal() {
+            const card = document.getElementById('modalCard');
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { document.getElementById('customModal').style.display = "none"; }, 300);
+        }
+
+        function showShortcutGuide() {
+            showModal({
+                title: "⌨️ Keyboard Shortcuts Guide",
+                body: "• Ctrl + Z : Undo Edit\n• Ctrl + Y : Redo Edit\n• Spacebar : Hold to Compare Original Photo\n• Shift + Click : Set Clone Tool Anchor\n• Scroll Wheel : Zoom Scale In/Out",
+                icon: "⌨️",
+                confirmText: "Got it!",
+                onConfirm: () => {}
+            });
+        }
+
+        if(safeStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
+            document.getElementById('themeBtn').innerText = '☀️';
+        }
+
+        let suitsCache = {};
+        function loadSuitCache() {
+            Object.entries(SUITS_SVG).forEach(([key, value]) => {
+                let img = new Image(); img.src = value; suitsCache[key] = img;
+            });
+            Object.entries(SUITS_PNG).forEach(([key, url]) => {
+                let img = new Image(); img.crossOrigin = "anonymous";
+                img.onload = () => { suitsCache[key] = img; };
+                img.src = url;
+            });
+        }
+        loadSuitCache();
+
+        window.onload = () => {
+            bindEvents();
+            bindShortcuts();
+            let savedSettings = safeStorage.getItem('passport_studio_settings');
+            if(savedSettings) {
+                try {
+                    let settings = JSON.parse(savedSettings);
+                    settings.forEach(i => { 
+                        if(studioDOM[i.id]) { 
+                            if(studioDOM[i.id].type==='checkbox') studioDOM[i.id].checked = i.val; 
+                            else studioDOM[i.id].value = i.val; 
+                        }
+                    });
+                    if(studioDOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
+                    if(studioDOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+                    studioDOM.bgType.dispatchEvent(new Event('change'));
+                } catch(e) {}
+            }
+            
+            let savedSession = safeStorage.getItem('passport_studio_autosave');
+            if(savedSession) {
+                try {
+                    let data = JSON.parse(savedSession);
+                    if(data.f && data.f.rawSrc) {
+                        document.getElementById('dropZone').style.display = 'none';
+                        document.getElementById('editorWrapper').style.display = 'block';
+                        loadState(data);
+                    }
+                    saveHistory(); 
+                } catch(e) { saveHistory(); }
+            } else saveHistory();
+        };
+
+        function bindShortcuts() {
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                    e.preventDefault(); document.getElementById('undoBtn').click();
+                } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                    e.preventDefault(); document.getElementById('redoBtn').click();
+                } else if (e.code === 'Space' && !isComparing) {
+                    e.preventDefault(); isComparing = true; renderEditor();
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space' && isComparing) {
+                    e.preventDefault(); isComparing = false; renderEditor();
+                }
+            });
+        }
+
+        window.toggleFlip = function(dir) {
+            let s = state[activeSide];
+            if (dir === 'H') s.flipH = !s.flipH;
+            if (dir === 'V') s.flipV = !s.flipV;
+            renderEditor(); saveHistory();
+            showToast(`Flipped ${dir === 'H' ? 'Horizontally' : 'Vertically'}!`, "🪞");
+        };
+
+        window.rotate90 = function(deg) {
+            let s = state[activeSide];
+            s.rotation = (s.rotation + deg) % 360;
+            studioDOM.rotation.value = s.rotation;
+            renderEditor(); saveHistory();
+        };
+
+        window.resetGroup = function(group) {
+            let s = state[activeSide];
+            if (group === 'transform') {
+                s.zoom = 100; s.panX = 0; s.panY = 0; s.rotation = 0; s.flipH = false; s.flipV = false;
+                s.suitScale = 100; s.suitPanX = 0; s.suitPanY = 0;
+                studioDOM.zoom.value = 100; studioDOM.panX.value = 0; studioDOM.panY.value = 0; studioDOM.rotation.value = 0;
+                studioDOM.suitScale.value = 100; studioDOM.suitPanX.value = 0; studioDOM.suitPanY.value = 0;
+                document.getElementById('val-zoom').innerText = '100%';
+                if(document.getElementById('lbl-suitScale')) document.getElementById('lbl-suitScale').innerText = '100%';
+            } else if (group === 'filters') {
+                s.bright = 100; s.cont = 100; s.sat = 100; s.sharp = 0;
+                studioDOM.bright.value = 100; studioDOM.cont.value = 100; studioDOM.sat.value = 100; studioDOM.sharp.value = 0;
+                studioDOM.bwMode.checked = false; studioDOM.cinematicMode.checked = false; studioDOM.aiWhiteBal.checked = false;
+                studioDOM.sepiaMode.checked = false; studioDOM.invertMode.checked = false; studioDOM.vintageMode.checked = false;
+            } else if (group === 'beauty') {
+                s.skinSmooth = 0; s.teethFix = 0; s.eyeBright = 0; s.faceSlim = 0;
+                studioDOM.skinSmooth.value = 0; studioDOM.teethFix.value = 0; studioDOM.eyeBright.value = 0; studioDOM.faceSlim.value = 0;
+                ['skinSmooth', 'teethFix', 'eyeBright', 'faceSlim'].forEach(id => {
+                    if(document.getElementById('lbl-' + id)) document.getElementById('lbl-' + id).innerText = '0';
+                });
+            } else if (group === 'fx') {
+                s.bgBlur = 0; s.lensBlur = 0;
+                studioDOM.bgBlur.value = 0; studioDOM.lensBlur.value = 0;
+            }
+            renderEditor();
+            saveHistory();
+            showToast("Settings reset successfully!", "🔄");
+        };
+
+        window.resetMasterImage = function() {
+            let s = state[activeSide];
+            if (!s.originalSrc) return;
+
+            showModal({
+                title: "Reset Photo Completely?",
+                body: "This will remove all background removals, brushes, filters, and transforms. The photo will return exactly to its original state.",
+                icon: "🔄",
+                confirmText: "Yes, Reset Photo",
+                cancelText: "Cancel",
+                onConfirm: () => {
+                    let img = new Image();
+                    img.onload = () => {
+                        s.imgObj = img;
+                        s.rawSrc = s.originalSrc;
+                        s.editLayer = null; 
+                        s.aiData = null; 
+
+                        s.zoom = 100; s.panX = 0; s.panY = 0; s.rotation = 0; s.flipH = false; s.flipV = false;
+                        s.suitScale = 100; s.suitPanX = 0; s.suitPanY = 0;
+                        s.bright = 100; s.cont = 100; s.sat = 100; s.sharp = 0;
+                        s.skinSmooth = 0; s.teethFix = 0; s.eyeBright = 0; s.faceSlim = 0;
+                        s.bgBlur = 0; s.lensBlur = 0;
+
+                        studioDOM.zoom.value = 100; document.getElementById('val-zoom').innerText = '100%';
+                        studioDOM.panX.value = 0; studioDOM.panY.value = 0; studioDOM.rotation.value = 0;
+                        studioDOM.suitScale.value = 100; studioDOM.suitPanX.value = 0; studioDOM.suitPanY.value = 0;
+                        studioDOM.bright.value = 100; studioDOM.cont.value = 100; studioDOM.sat.value = 100; studioDOM.sharp.value = 0;
+                        studioDOM.skinSmooth.value = 0; studioDOM.teethFix.value = 0; studioDOM.eyeBright.value = 0; studioDOM.faceSlim.value = 0;
+                        studioDOM.bgBlur.value = 0; studioDOM.lensBlur.value = 0;
+                        
+                        ['skinSmooth', 'teethFix', 'eyeBright', 'faceSlim'].forEach(id => {
+                            if(document.getElementById('lbl-' + id)) document.getElementById('lbl-' + id).innerText = '0';
+                        });
+
+                        studioDOM.bwMode.checked = false; studioDOM.cinematicMode.checked = false; studioDOM.aiWhiteBal.checked = false;
+                        studioDOM.sepiaMode.checked = false; studioDOM.invertMode.checked = false; studioDOM.vintageMode.checked = false;
+                        
+                        studioDOM.bgType.value = 'original';
+                        document.getElementById('bgColor').style.display = 'none';
+                        document.getElementById('customBgBtn').style.display = 'none';
+
+                        renderEditor(); saveHistory(); showToast("Photo restored to original!", "🔄");
+                    };
+                    img.src = s.originalSrc;
+                }
+            });
+        };
+
+        window.setTool = function(toolName) {
+            activeTool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('bg-violet-500', 'text-white', 'border-violet-500', 'bg-pink-500', 'text-white', 'border-pink-500');
+                if (btn.id === 'tool_bgEraser') btn.classList.add('bg-pink-500/10', 'text-pink-500', 'border-pink-500/50');
+                else btn.classList.add('bg-[var(--bg-color)]', 'text-[var(--text-main)]');
+            });
+            const selectedBtn = document.getElementById('tool_' + toolName);
+            if(selectedBtn) {
+                if (toolName === 'bgEraser') {
+                    selectedBtn.classList.remove('bg-pink-500/10', 'text-pink-500', 'border-pink-500/50');
+                    selectedBtn.classList.add('bg-pink-500', 'text-white', 'border-pink-500');
+                } else {
+                    selectedBtn.classList.remove('bg-[var(--bg-color)]', 'text-[var(--text-main)]');
+                    selectedBtn.classList.add('bg-violet-500', 'text-white', 'border-violet-500');
+                }
+            }
+            if(toolName !== 'pan') {
+                singleC.classList.add('tool-active');
+                if(toolName === 'clone') showToast("Clone Stamp: Shift + Click on image to set sample point.", "🖱️");
+                else if(toolName === 'wand') showToast("Magic Wand: Click backdrop pixel to transparentize.", "🪄");
+                else if(toolName === 'bgEraser') showToast("BG Eraser: Touch/Drag over areas to erase.", "🧽");
+            } else { singleC.classList.remove('tool-active'); }
+            if(toolName !== 'clone') document.getElementById('cloneAnchorIndicator').classList.add('hidden');
+        };
+
+        document.getElementById('tool_bgEraser').addEventListener('click', () => setTool('bgEraser'));
+        document.getElementById('tool_clone').addEventListener('click', () => setTool('clone'));
+        document.getElementById('tool_liquify').addEventListener('click', () => setTool('liquify'));
+
+        document.getElementById('brushRadius').addEventListener('input', (e) => {
+            document.getElementById('lbl-brushRadius').innerText = e.target.value;
+        });
+
+        const compareBtn = document.getElementById('compareBtn');
+        ['mousedown', 'touchstart'].forEach(evt => {
+            compareBtn.addEventListener(evt, (e) => { e.preventDefault(); isComparing = true; renderEditor(); });
+        });
+        ['mouseup', 'mouseleave', 'touchend'].forEach(evt => {
+            compareBtn.addEventListener(evt, (e) => { e.preventDefault(); isComparing = false; renderEditor(); });
+        });
+
+        window.runAIFix = async function(type) {
+            let s = state[activeSide];
+            if(!s.imgObj) return showToast("Upload target photo first!", "⚠️", true);
+            if(!s.aiData) return showToast("Run AI Auto-Center first to scan facial landmarks!", "⚠️", true);
+            
+            initEditLayer(s);
+            let ctx = s.editLayer.getContext('2d');
+            let lm = s.aiData.landmarks;
+
+            if(type === 'redEye' || type === 'glass') {
+                [lm.getLeftEye(), lm.getRightEye()].forEach(eye => {
+                    let minX = Math.min(...eye.map(p=>p.x)), maxX = Math.max(...eye.map(p=>p.x));
+                    let minY = Math.min(...eye.map(p=>p.y)), maxY = Math.max(...eye.map(p=>p.y));
+                    let cx = minX + (maxX-minX)/2, cy = minY + (maxY-minY)/2, radius = (maxX-minX);
+                    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, radius * 0.7, 0, Math.PI*2); ctx.clip();
+                    if(type === 'redEye') {
+                        ctx.fillStyle = "rgba(40, 40, 40, 0.85)"; ctx.globalCompositeOperation = "color"; ctx.fill();
+                        ctx.globalCompositeOperation = "multiply"; ctx.fill();
+                    } else if (type === 'glass') {
+                        ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; ctx.globalCompositeOperation = "overlay"; ctx.fill();
+                    }
+                    ctx.restore();
+                });
+                showToast(type === 'redEye' ? "Red-Eye Purged Successfully!" : "Anti-Glare Glare Filtered!", "✨");
+            }
+            if(type === 'hair') {
+                let box = s.aiData.detection.box;
+                ctx.save(); ctx.beginPath();
+                ctx.ellipse(box.x + box.width/2, box.y - box.height*0.12, box.width*0.65, box.height*0.25, 0, 0, Math.PI*2); 
+                ctx.clip(); ctx.fillStyle = "rgba(0, 0, 0, 0.15)"; ctx.globalCompositeOperation = "color-burn"; ctx.fill(); ctx.restore();
+                showToast("Hair Details Enhanced!", "✨");
+            }
+            renderEditor(); saveHistory();
+        };
+
+        function bindEvents() {
+            ids.forEach(id => {
+                if(!studioDOM[id]) return;
+                studioDOM[id].addEventListener('input', (e) => {
+                    if(['zoom','panX','panY','rotation','suitScale','suitPanX','suitPanY','bright','cont','sat','sharp', 'skinSmooth', 'teethFix', 'eyeBright', 'faceSlim', 'bgBlur', 'lensBlur'].includes(id)) {
+                        state[activeSide][id] = Number(e.target.value);
+                        if(id==='zoom') document.getElementById('val-zoom').innerText = e.target.value + '%';
+                        if(id==='suitScale' && document.getElementById('lbl-suitScale')) document.getElementById('lbl-suitScale').innerText = e.target.value + '%';
+                        if(document.getElementById('lbl-' + id)) document.getElementById('lbl-' + id).innerText = e.target.value;
+                    }
+                    if(id === 'wandTolerance') document.getElementById('val-tolerance').innerText = e.target.value;
+                    if(id === 'wandFeather') document.getElementById('val-feather').innerText = e.target.value + 'px';
+                    if(id === 'photoSize') {
+                        document.getElementById('customSizeBox').style.display = studioDOM.photoSize.value === 'CUSTOM' ? 'grid' : 'none';
+                        document.getElementById('aadharModeBox').style.display = studioDOM.photoSize.value === 'AADHAR' ? 'block' : 'none';
+                        if(activeSide === 'back') document.getElementById('backUploader').style.display = 'block';
+                        else document.getElementById('backUploader').style.display = 'none';
+                    }
+                    renderEditor();
+                });
+                if(id === 'bgType') {
+                    studioDOM[id].addEventListener('change', (e) => {
+                        let val = e.target.value;
+                        document.getElementById('bgColor').style.display = (val === 'solid' || val === 'gradient') ? 'block' : 'none';
+                        document.getElementById('customBgBtn').style.display = val === 'custom' ? 'block' : 'none';
+                        if(val === 'custom' && !customBgImg) document.getElementById('customBgFile').click();
+                        saveHistory(); renderEditor();
+                    });
+                } else { studioDOM[id].addEventListener('change', saveHistory); }
+            });
+
+            document.getElementById('customBgBtn').addEventListener('click', () => document.getElementById('customBgFile').click());
+            document.getElementById('customBgFile').addEventListener('change', (e) => {
+                let file = e.target.files[0]; if(!file) return;
+                let reader = new FileReader();
+                reader.onload = (event) => {
+                    let img = new Image(); 
+                    img.onload = () => { customBgImg = img; renderEditor(); saveHistory(); }; 
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', () => { 
+                if(hIndex > 0) { hIndex--; loadState(history[hIndex]); } else showToast("No actions to undo.", "↩️");
+            });
+            document.getElementById('redoBtn').addEventListener('click', () => { 
+                if(hIndex < history.length - 1) { hIndex++; loadState(history[hIndex]); } else showToast("No actions to redo.", "↪️");
+            });
+
+            const getPos = (e) => {
+                if(e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                return { x: e.clientX, y: e.clientY };
+            };
+            
+            const getImgCoords = (e) => {
+                let rect = singleC.getBoundingClientRect();
+                let px = (getPos(e).x - rect.left) * (singleC.width / rect.width);
+                let py = (getPos(e).y - rect.top) * (singleC.height / rect.height);
+                let s = state[activeSide]; 
+                let W = singleC.width; let H = singleC.height;
+                if(!s.imgObj) return null;
+
+                let ratioImg = s.imgObj.width / s.imgObj.height; let ratioC = W / H;
+                let baseW = ratioImg > ratioC ? H * ratioImg : W;
+                let baseH = ratioImg > ratioC ? H : W / ratioImg;
+                let z = s.zoom / 100; let finalW = baseW * z; let finalH = baseH * z;
+
+                px -= (W/2 + s.panX); py -= (H/2 + s.panY);
+                let rad = -s.rotation * Math.PI / 180;
+                let rx = px * Math.cos(rad) - py * Math.sin(rad);
+                let ry = px * Math.sin(rad) + py * Math.cos(rad);
+                if(s.faceSlim > 0) rx /= (1 - (s.faceSlim/300)); 
+                rx += finalW/2; ry += finalH/2;
+                return { x: rx * (s.imgObj.width / finalW), y: ry * (s.imgObj.height / finalH) };
+            };
+
+            const dropZone = document.getElementById('dropZone');
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault(); e.stopPropagation(); dropZone.classList.add('border-violet-600', 'bg-violet-500/10');
+                }, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('border-violet-600', 'bg-violet-500/10');
+                }, false);
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer; const files = dt.files;
+                if (files && files.length > 0) handleFile(files[0], 'front');
+            }, false);
+
+            const startDrag = (e) => {
+                if(!state[activeSide].imgObj) return;
+                isDragging = true; let p = getPos(e); startX = p.x; startY = p.y;
+                let coords = getImgCoords(e); let s = state[activeSide]; 
+                
+                if(activeTool !== 'pan' && coords) {
+                    initEditLayer(s);
+                    if(activeTool === 'clone') {
+                        if(e.shiftKey || !cloneSource) {
+                            cloneSource = { x: coords.x, y: coords.y };
+                            showToast("Clone source anchor point set!", "🎯");
+                            updateCloneAnchorVisual(e); isDragging = false; return;
+                        }
+                    }
+                    if(activeTool === 'wand') { applyChromaKeyWand(s, coords.x, coords.y); isDragging = false; return; }
+                    if(activeTool === 'spot' || activeTool === 'heal' || activeTool === 'bgEraser') { applyBrushTool(s, coords.x, coords.y, activeTool, 0, 0); }
+                }
+            };
+
+            const moveDrag = (e) => {
+                if(!isDragging) return; 
+                if(activeTool !== 'pan') e.preventDefault();
+                let p = getPos(e); let dx = p.x - startX; let dy = p.y - startY;
+                let s = state[activeSide];
+                
+                if(activeTool === 'pan') {
+                    s.panX += dx; s.panY += dy; startX = p.x; startY = p.y;
+                    studioDOM.panX.value = s.panX; studioDOM.panY.value = s.panY; renderEditor();
+                } else {
+                    let coords = getImgCoords(e); if(!coords) return;
+                    let factor = (s.imgObj.width / (singleC.width * (s.zoom/100)));
+                    let imgDx = dx * factor; let imgDy = dy * factor;
+
+                    if(activeTool === 'liquify' || activeTool === 'clone' || activeTool === 'spot' || activeTool === 'bgEraser') {
+                        applyBrushTool(s, coords.x, coords.y, activeTool, imgDx, imgDy);
+                        if(activeTool === 'clone' && cloneSource) updateCloneAnchorVisual(e);
+                    }
+                    startX = p.x; startY = p.y;
+                }
+            };
+
+            const endDrag = () => { if(isDragging) { isDragging = false; saveHistory(); } };
+
+            singleC.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', moveDrag); window.addEventListener('mouseup', endDrag);
+            singleC.addEventListener('touchstart', (e) => { if(activeTool!=='pan') e.preventDefault(); startDrag(e); }, {passive: false}); 
+            singleC.addEventListener('touchmove', (e) => { if(activeTool!=='pan') e.preventDefault(); moveDrag(e); }, {passive: false}); 
+            singleC.addEventListener('touchend', endDrag);
+            singleC.addEventListener('wheel', (e) => {
+                e.preventDefault(); let dir = e.deltaY < 0 ? 5 : -5;
+                state[activeSide].zoom = Math.max(20, Math.min(400, state[activeSide].zoom + dir));
+                studioDOM.zoom.value = state[activeSide].zoom; document.getElementById('val-zoom').innerText = Math.round(state[activeSide].zoom) + '%';
+                renderEditor();
+            }, {passive: false});
+
+            document.getElementById('fileIn').addEventListener('change', (e) => handleFile(e.target.files[0], 'front'));
+            document.getElementById('cameraIn').addEventListener('change', (e) => handleFile(e.target.files[0], activeSide));
+            document.getElementById('fileBack').addEventListener('change', (e) => handleFile(e.target.files[0], 'back'));
+            document.getElementById('generateBtn').addEventListener('click', generateSheet);
+            document.getElementById('themeBtn').addEventListener('click', () => {
+                document.body.classList.toggle('dark-theme');
+                const isDark = document.body.classList.contains('dark-theme');
+                safeStorage.setItem('theme', isDark ? 'dark' : 'light');
+                document.getElementById('themeBtn').innerText = isDark ? '☀️' : '🌙';
+            });
+            document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                let currentSettings = ids.map(id => ({ id, val: studioDOM[id].type==='checkbox' ? studioDOM[id].checked : studioDOM[id].value }));
+                safeStorage.setItem('passport_studio_settings', JSON.stringify(currentSettings)); showToast("Studio Settings Saved Successfully!", "✅");
+            });
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                showModal({
+                    title: "Reset Configuration?",
+                    body: "Reset current sheet layouts to defaults?",
+                    icon: "🗑️",
+                    onConfirm: () => { safeStorage.removeItem('passport_studio_settings'); location.reload(); }
+                });
+            });
+
+            document.getElementById('aiFullFixBtn').addEventListener('click', async () => {
+                if(!state[activeSide].imgObj) return showToast("Upload photo asset first!", "⚠️", true);
+                let btn = document.getElementById('aiFullFixBtn'); let status = document.getElementById('aiStatus');
+                btn.disabled = true; status.classList.remove('hidden'); status.innerText = "Loading facial detection neural network...";
+                try {
+                    await loadFaceModels(); status.innerText = "Scanning facial landmarks & biometric vectors...";
+                    const img = state[activeSide].imgObj;
+                    let detectionCanvas = document.createElement('canvas'); detectionCanvas.width = img.width; detectionCanvas.height = img.height;
+                    let detCtx = detectionCanvas.getContext('2d'); detCtx.drawImage(img, 0, 0);
+                    const detection = await faceapi.detectSingleFace(detectionCanvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+                    if(!detection) { showToast("Biometric scan was unable to locate clear face coordinates.", "⚠️", true); } else {
+                        state[activeSide].aiData = detection;
+                        const leftEye = detection.landmarks.getLeftEye(); const rightEye = detection.landmarks.getRightEye();
+                        const leY = leftEye.reduce((s,p)=>s+p.y,0)/leftEye.length; const reY = rightEye.reduce((s,p)=>s+p.y,0)/rightEye.length;
+                        const leX = leftEye.reduce((s,p)=>s+p.x,0)/leftEye.length; const reX = rightEye.reduce((s,p)=>s+p.x,0)/rightEye.length;
+                        
+                        state[activeSide].rotation = -(Math.atan2(reY - leY, reX - leX) * 180 / Math.PI); studioDOM.rotation.value = state[activeSide].rotation;
+                        let facePercent = detection.detection.box.height / img.height; 
+                        state[activeSide].zoom = Math.max(20, Math.min(400, (0.58 / facePercent) * 100));
+                        studioDOM.zoom.value = state[activeSide].zoom; document.getElementById('val-zoom').innerText = Math.round(state[activeSide].zoom) + '%';
+                        
+                        state[activeSide].panX = 0; state[activeSide].panY = -(detection.detection.box.y - (img.height * 0.15)) * (state[activeSide].zoom / 100) * 0.2;
+                        studioDOM.panX.value = 0; studioDOM.panY.value = state[activeSide].panY;
+
+                        calculateBlurAndQuality(img, detection); showToast("AI Auto-Centering and Landmark Alignment Completed!", "⚡");
+                    }
+                } catch(e) { showToast("AI network exception. Check network connection.", "⚠️", true); }
+                btn.disabled = false; status.classList.add('hidden'); renderEditor(); saveHistory();
+            });
+
+            document.getElementById('removeBgBtn').addEventListener('click', async () => {
+                let src = state[activeSide].rawSrc; if(!src) return showToast("Upload an asset first!", "⚠️", true);
+                let btn = document.getElementById('removeBgBtn'); let status = document.getElementById('aiStatus');
+                btn.disabled = true; status.classList.remove('hidden'); status.innerText = "Processing background separation (Full Resolution)...";
+                try {
+                    let removeFunc = window.imglyRemoveBackground || (window['@imgly/background-removal'] && window['@imgly/background-removal'].removeBackground);
+                    if(!removeFunc) throw new Error("ImageLy package not loaded.");
+                    
+                    let optBlob = await new Promise((resolve) => {
+                        let i = new Image(); 
+                        i.onload = () => {
+                            let c = document.createElement('canvas'); c.width = i.width; c.height = i.height;
+                            c.getContext('2d').drawImage(i, 0, 0); c.toBlob(resolve, 'image/png', 1.0);
+                        }; i.src = src;
+                    });
+                    
+                    status.innerText = "Extracting transparent alpha layers...";
+                    let config = { publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.4.3/dist/", progress: (key, current, total) => { status.innerText = `Alpha Erasure: ${Math.round((current / total) * 100) || 0}%`; } };
+                    let blob = await removeFunc(optBlob, config); let url = URL.createObjectURL(blob); let img = new Image();
+                    img.onload = () => {
+                        state[activeSide].imgObj = img; state[activeSide].rawSrc = url; 
+                        studioDOM.bgType.value = 'solid'; studioDOM.bgColor.value = '#ffffff';
+                        renderEditor(); saveHistory(); showToast("AI Background Erasure Completed in Full Ultra-HD!", "✂️");
+                        btn.disabled = false; status.classList.add('hidden');
+                    }; img.src = url;
+                } catch(e) {
+                    showToast("Use Magic Wand or Hand-Brush Eraser for manual removal.", "💡");
+                    status.classList.add('hidden'); btn.disabled = false;
+                }
+            });
+        }
+
+        function initEditLayer(s) {
+            if(!s.editLayer && s.imgObj) {
+                s.editLayer = document.createElement('canvas'); s.editLayer.width = s.imgObj.width; s.editLayer.height = s.imgObj.height;
+                s.editLayer.getContext('2d').clearRect(0, 0, s.editLayer.width, s.editLayer.height);
+            }
+        }
+
+        function applyChromaKeyWand(s, clickX, clickY) {
+            if(!s.imgObj) return; initEditLayer(s);
+            let tempCanvas = document.createElement('canvas'); tempCanvas.width = s.imgObj.width; tempCanvas.height = s.imgObj.height;
+            let tempCtx = tempCanvas.getContext('2d'); tempCtx.drawImage(s.imgObj, 0, 0);
+            if(s.editLayer) tempCtx.drawImage(s.editLayer, 0, 0);
+            
+            let imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height); let pixels = imgData.data;
+            let targetX = Math.round(clickX); let targetY = Math.round(clickY);
+            if (targetX < 0 || targetX >= tempCanvas.width || targetY < 0 || targetY >= tempCanvas.height) return;
+            
+            let idx = (targetY * tempCanvas.width + targetX) * 4;
+            let targetR = pixels[idx]; let targetG = pixels[idx+1]; let targetB = pixels[idx+2];
+            const hexColor = "#" + ((1 << 24) + (targetR << 16) + (targetG << 8) + targetB).toString(16).slice(1);
+            document.getElementById('wandKeyColorShow').style.backgroundColor = hexColor;
+
+            let tolerance = Number(studioDOM.wandTolerance.value); let feather = Number(studioDOM.wandFeather.value);
+            for (let y = 0; y < tempCanvas.height; y++) {
+                for (let x = 0; x < tempCanvas.width; x++) {
+                    let pIdx = (y * tempCanvas.width + x) * 4;
+                    let r = pixels[pIdx]; let g = pixels[pIdx+1]; let b = pixels[pIdx+2];
+                    let dist = Math.sqrt((r - targetR) * (r - targetR) + (g - targetG) * (g - targetG) + (b - targetB) * (b - targetB));
+                    if (dist <= tolerance) { pixels[pIdx+3] = 0; } 
+                    else if (feather > 0 && dist <= tolerance + feather) {
+                        let ratio = (dist - tolerance) / feather; pixels[pIdx+3] = Math.min(pixels[pIdx+3], Math.round(ratio * 255));
+                    }
+                }
+            }
+            let resCanvas = document.createElement('canvas'); resCanvas.width = s.imgObj.width; resCanvas.height = s.imgObj.height;
+            resCanvas.getContext('2d').putImageData(imgData, 0, 0);
+            let finalImg = new Image();
+            finalImg.onload = () => {
+                s.imgObj = finalImg; s.rawSrc = resCanvas.toDataURL('image/png'); s.editLayer = null;
+                studioDOM.bgType.value = 'solid'; renderEditor(); saveHistory(); showToast("Color Keyed to Transparent!", "🪄");
+            }; finalImg.src = resCanvas.toDataURL('image/png');
+        }
+
+        function updateCloneAnchorVisual(e) {
+            if(!cloneSource || activeTool !== 'clone') return;
+            let rect = singleC.getBoundingClientRect(); let s = state[activeSide];
+            let W = singleC.width; let H = singleC.height;
+            let ratioImg = s.imgObj.width / s.imgObj.height; let ratioC = W / H;
+            let baseW = ratioImg > ratioC ? H * ratioImg : W; let baseH = ratioImg > ratioC ? H : W / ratioImg;
+            let z = s.zoom / 100; let finalW = baseW * z; let finalH = baseH * z;
+
+            let rx = cloneSource.x * (finalW / s.imgObj.width) - finalW/2; let ry = cloneSource.y * (finalH / s.imgObj.height) - finalH/2;
+            if(s.faceSlim > 0) rx *= (1 - (s.faceSlim/300));
+            let rad = s.rotation * Math.PI / 180;
+            let px = rx * Math.cos(rad) - ry * Math.sin(rad); let py = rx * Math.sin(rad) + ry * Math.cos(rad);
+            px += (W/2 + s.panX); py += (H/2 + s.panY);
+            let cssX = px * (rect.width / W); let cssY = py * (rect.height / H);
+
+            let indicator = document.getElementById('cloneAnchorIndicator');
+            indicator.classList.remove('hidden'); indicator.style.left = `${cssX - 12}px`; indicator.style.top = `${cssY - 12}px`;
+        }
+
+        function applyBrushTool(s, x, y, tool, dx=0, dy=0) {
+            let ctx = s.editLayer.getContext('2d');
+            let brushSize = Number(document.getElementById('brushRadius').value);
+            let radius = brushSize * (s.imgObj.width / 600); 
+            
+            ctx.save(); ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI*2); ctx.clip();
+
+            if (tool === 'spot') {
+                let off = radius * 1.4; ctx.filter = 'blur(3px)'; ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(s.imgObj, x + off - radius, y - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+            } else if (tool === 'heal') {
+                ctx.filter = 'blur(6px)'; ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(s.imgObj, x - radius, y - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+            } else if (tool === 'bgEraser') {
+                ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0, 0, 0, 1)'; ctx.fill();
+            } else if (tool === 'clone') {
+                if(!cloneSource) { ctx.restore(); return; }
+                let sx = cloneSource.x; let sy = cloneSource.y;
+                if(dx !== 0 || dy !== 0) { cloneSource.x += dx; cloneSource.y += dy; }
+                ctx.drawImage(s.imgObj, sx - radius, sy - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+                if(s.editLayer) ctx.drawImage(s.editLayer, sx - radius, sy - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+            } else if (tool === 'liquify') {
+                let px = x - dx*1.3; let py = y - dy*1.3; ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(s.imgObj, px - radius, py - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+                if(s.editLayer) ctx.drawImage(s.editLayer, px - radius, py - radius, radius*2, radius*2, x - radius, y - radius, radius*2, radius*2);
+            }
+            ctx.restore(); renderEditor();
+        }
+
+        async function loadFaceModels() {
+            if (aiModelsLoaded) return;
+            const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            aiModelsLoaded = true;
+        }
+
+        function calculateBlurAndQuality(img, detection) {
+            let c = document.createElement('canvas'); c.width = Math.min(img.width, 1200); c.height = Math.min(img.height, 1200);
+            let ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height);
+            let imgData = ctx.getImageData(0,0,c.width,c.height); let data = imgData.data;
+            let sum = 0; let count = 0;
+            for(let i=0; i<data.length; i+=16) { 
+                if(i % (imgData.width*4) !== 0 && (i-4) >= 0) { sum += Math.abs(data[i] - data[i-4]); count++; }
+            }
+            let avgDiff = sum / count; let blurScore = Math.min(100, Math.round((avgDiff / 18) * 100)); 
+            let faceScore = Math.round(detection.detection.score * 100);
+            let finalScore = Math.round((blurScore * 0.5) + (faceScore * 0.5));
+            let box = document.getElementById('aiScoreBox');
+            let color = blurScore < 28 ? "var(--danger)" : "var(--success)";
+            box.style.borderColor = color; document.getElementById('scoreText').innerText = `AI Biometric Quality: ${finalScore}/100`;
+            document.getElementById('scoreText').style.color = color;
+            document.getElementById('blurText').innerText = blurScore < 28 ? "⚠️ Soft lighting/blur detected." : "✅ Clear 600 DPI biometric verified.";
+        }
+
+        function getSizes() {
+            let pW, pH;
+            if(studioDOM.photoSize.value === 'CUSTOM') { pW = Number(studioDOM.cWidth.value); pH = Number(studioDOM.cHeight.value); }
+            else if(studioDOM.photoSize.value === 'AADHAR') { pW = 85.6; pH = 54.0; } 
+            else { let parts = studioDOM.photoSize.value.split('x'); pW = Number(parts[0]); pH = Number(parts[1]); }
+            return { w: Math.round(pW * MM_TO_PX), h: Math.round(pH * MM_TO_PX) };
+        }
+
+        function drawSingle(ctx, sData, isBack) {
+            const W = ctx.canvas.width; const H = ctx.canvas.height;
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+
+            if (isComparing && sData.baseOriginal) {
+                ctx.clearRect(0,0,W,H);
+                ctx.drawImage(sData.baseOriginal, 0, 0, W, H);
+                ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(10, 10, 160, 26);
+                ctx.fillStyle = "#ffffff"; ctx.font = "bold 12px sans-serif";
+                ctx.fillText("👁️ ORIGINAL PHOTO", 20, 27);
+                return;
+            }
+
+            if(studioDOM.bgType.value === 'solid') { ctx.fillStyle = studioDOM.bgColor.value; ctx.fillRect(0,0,W,H); }
+            else if(studioDOM.bgType.value === 'gradient') {
+                let g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0, studioDOM.bgColor.value); g.addColorStop(1, '#94a3b8');
+                ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+            } else if(studioDOM.bgType.value === 'custom' && customBgImg) {
+                let ir = customBgImg.width / customBgImg.height; let cr = W / H; let dw, dh, dx, dy;
+                if(ir > cr) { dh = H; dw = H * ir; dy = 0; dx = (W - dw) / 2; } else { dw = W; dh = W / ir; dx = 0; dy = (H - dh) / 2; }
+                if(Number(studioDOM.bgBlur.value) > 0) {
+                    ctx.save(); ctx.filter = `blur(${Number(studioDOM.bgBlur.value)/6}px)`; ctx.drawImage(customBgImg, dx, dy, dw, dh); ctx.restore();
+                } else { ctx.drawImage(customBgImg, dx, dy, dw, dh); }
+            } else if(studioDOM.bgType.value === 'original' && sData.baseOriginal) {
+                if(Number(studioDOM.bgBlur.value) > 0) {
+                    ctx.save(); ctx.filter = `blur(${Number(studioDOM.bgBlur.value)/6}px) brightness(95%)`; drawTransformed(ctx, sData, sData.baseOriginal, W, H); ctx.restore();
+                } else { drawTransformed(ctx, sData, sData.baseOriginal, W, H); }
+            } else { ctx.clearRect(0,0,W,H); }
+
+            if(!sData.imgObj) return;
+
+            ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+            let filters = `brightness(${sData.bright}%) contrast(${sData.cont}%) saturate(${sData.sat}%)`;
+            if(studioDOM.bwMode.checked) filters += ' grayscale(100%)';
+            if(studioDOM.aiWhiteBal.checked) filters += ' sepia(6%) hue-rotate(-3deg) contrast(102%)';
+            if(studioDOM.sepiaMode.checked) filters += ' sepia(100%)';
+            if(studioDOM.invertMode.checked) filters += ' invert(100%)';
+            if(studioDOM.vintageMode.checked) filters += ' sepia(50%) contrast(120%) saturate(80%) hue-rotate(-15deg)';
+            if(Number(sData.lensBlur) > 0) filters += ` blur(${Number(sData.lensBlur)/12}px)`; 
+            ctx.filter = filters;
+
+            drawTransformed(ctx, sData, sData.imgObj, W, H);
+            if(sData.editLayer) { drawTransformed(ctx, sData, sData.editLayer, W, H); }
+
+            if (sData.aiData && !isBack && (sData.teethFix > 0 || sData.eyeBright > 0 || sData.skinSmooth > 0)) {
+                let lm = sData.aiData.landmarks; ctx.save();
+                let ratioImg = sData.imgObj.width / sData.imgObj.height; let ratioC = W / H;
+                let baseW = ratioImg > ratioC ? H * ratioImg : W; let baseH = ratioImg > ratioC ? H : W / ratioImg;
+                let z = sData.zoom / 100; let finalW = baseW * z; let finalH = baseH * z;
+                
+                ctx.translate(W/2 + sData.panX, H/2 + sData.panY); ctx.rotate(sData.rotation * Math.PI / 180);
+                if(sData.faceSlim > 0) ctx.scale(1 - (sData.faceSlim/300), 1);
+                ctx.translate(-finalW/2, -finalH/2); ctx.scale(finalW / sData.imgObj.width, finalH / sData.imgObj.height);
+                
+                if (sData.teethFix > 0) {
+                    let mouth = lm.getMouth(); ctx.beginPath(); ctx.moveTo(mouth[12].x, mouth[12].y);
+                    for(let i=13; i<20; i++) ctx.lineTo(mouth[i].x, mouth[i].y); ctx.closePath();
+                    ctx.fillStyle = `rgba(255, 255, 255, ${sData.teethFix/140})`; ctx.globalCompositeOperation = "color-dodge"; ctx.fill();
+                }
+                if (sData.eyeBright > 0) {
+                    [lm.getLeftEye(), lm.getRightEye()].forEach(eye => {
+                        ctx.beginPath(); ctx.moveTo(eye[0].x, eye[0].y); for(let i=1; i<eye.length; i++) ctx.lineTo(eye[i].x, eye[i].y); ctx.closePath();
+                        ctx.fillStyle = `rgba(255, 255, 255, ${sData.eyeBright/180})`; ctx.globalCompositeOperation = "color-dodge"; ctx.fill();
+                    });
+                }
+                if (sData.skinSmooth > 0) {
+                    let jaw = lm.getJawOutline(); let nose = lm.getNose();
+                    ctx.beginPath(); ctx.moveTo(jaw[0].x, jaw[0].y); for(let i=1; i<jaw.length; i++) ctx.lineTo(jaw[i].x, jaw[i].y);
+                    ctx.lineTo(jaw[jaw.length-1].x, jaw[0].y - (jaw[8].y - nose[0].y)); ctx.closePath();
+                    let grd = ctx.createRadialGradient(nose[3].x, nose[3].y, 8, nose[3].x, nose[3].y, sData.imgObj.width/1.8);
+                    grd.addColorStop(0, `rgba(255, 235, 215, ${sData.skinSmooth/280})`); grd.addColorStop(1, "rgba(255, 235, 215, 0)");
+                    ctx.fillStyle = grd; ctx.globalCompositeOperation = "soft-light"; ctx.fill();
+                }
+                ctx.restore();
+            }
+            ctx.restore();
+
+            if(sData.sharp > 0) { 
+                ctx.save(); ctx.globalAlpha = sData.sharp / 180; ctx.drawImage(ctx.canvas, -1, -1); ctx.drawImage(ctx.canvas, 1, 1); ctx.restore(); 
+            }
+            if(studioDOM.cinematicMode.checked && !isBack) {
+                ctx.save(); let g = ctx.createRadialGradient(W/2, H/2, W*0.18, W/2, H/2, W*0.75);
+                g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.52)'); ctx.fillStyle = g; ctx.fillRect(0,0,W,H); 
+                ctx.globalCompositeOperation = "overlay"; ctx.fillStyle = "rgba(255, 140, 40, 0.08)"; ctx.fillRect(0,0,W,H); ctx.restore();
+            }
+            
+            if(!isBack) {
+                let sVal = studioDOM.suit.value; 
+                if(sVal !== 'none' && suitsCache[sVal]) {
+                    let suitScale = (sData.suitScale || 100) / 100;
+                    let suitX = (sData.suitPanX || 0) * (W / 400);
+                    let suitY = (sData.suitPanY || 0) * (H / 400);
+                    
+                    let defW = W; let defH = H * 0.62;
+                    let finalW = defW * suitScale; let finalH = defH * suitScale;
+                    let finalX = (W - finalW) / 2 + suitX;
+                    let finalY = (H * 0.38) + suitY;
+                    
+                    ctx.drawImage(suitsCache[sVal], finalX, finalY, finalW, finalH);
+                }
+                
+                ctx.strokeStyle = "rgba(139, 92, 246, 0.85)"; ctx.lineWidth = Math.max(1.5, W*0.005);
+                if(studioDOM.guideFace.checked && studioDOM.photoSize.value !== 'AADHAR') { 
+                    ctx.beginPath(); ctx.ellipse(W/2, H*0.46, W*0.24, H*0.31, 0, 0, Math.PI*2); ctx.stroke(); 
+                }
+                if(studioDOM.guideEyes.checked && studioDOM.photoSize.value !== 'AADHAR') { 
+                    ctx.beginPath(); ctx.moveTo(0, H*0.42); ctx.lineTo(W, H*0.42); ctx.stroke(); 
+                }
+                if(studioDOM.nameTag.value || studioDOM.dateTag.value) {
+                    let th = H*0.14; ctx.fillStyle = "rgba(255,255,255,0.95)"; ctx.fillRect(0, H-th, W, th);
+                    ctx.fillStyle = "#000000"; ctx.textBaseline = "alphabetic"; ctx.textAlign = "center"; ctx.font = `bold ${th*0.32}px sans-serif`;
+                    if(studioDOM.nameTag.value) ctx.fillText(studioDOM.nameTag.value.toUpperCase(), W/2, H-th + th*0.42);
+                    if(studioDOM.dateTag.value) {
+                        let rawDate = studioDOM.dateTag.value.split('-'); let formattedDate = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}/${rawDate[0]}` : studioDOM.dateTag.value;
+                        ctx.fillText(formattedDate, W/2, H-th + th*0.84);
+                    }
+                }
+            }
+
+            // Single Photo Outer Border Option Check
+            const singleBorderEl = document.getElementById('singleBorder');
+            if(studioDOM.border.checked || (singleBorderEl && singleBorderEl.checked)) { 
+                ctx.strokeStyle = "#000000"; ctx.lineWidth = Math.max(2, W*0.006); ctx.strokeRect(0,0,W,H); 
+            }
+
+            // Single Photo Corner Lines (Cut Marks) Option Check
+            const singleCutMarksEl = document.getElementById('singleCutMarks');
+            if(singleCutMarksEl && singleCutMarksEl.checked) {
+                let m = Math.round(W * 0.08);
+                ctx.strokeStyle = "#000000";
+                ctx.lineWidth = Math.max(2, W * 0.006);
+                ctx.beginPath();
+                // Top-Left
+                ctx.moveTo(0, m); ctx.lineTo(0, 0); ctx.lineTo(m, 0);
+                // Top-Right
+                ctx.moveTo(W - m, 0); ctx.lineTo(W, 0); ctx.lineTo(W, m);
+                // Bottom-Left
+                ctx.moveTo(0, H - m); ctx.lineTo(0, H); ctx.lineTo(m, H);
+                // Bottom-Right
+                ctx.moveTo(W - m, H); ctx.lineTo(W, H); ctx.lineTo(W, H - m);
+                ctx.stroke();
+            }
+        }
+
+        function drawTransformed(ctx, sData, imgToDraw, W, H) {
+            let ratioImg = sData.imgObj.width / sData.imgObj.height; let ratioC = W / H;
+            let baseW, baseH;
+            if (ratioImg > ratioC) { baseH = H; baseW = H * ratioImg; } else { baseW = W; baseH = W / ratioImg; }
+            let z = sData.zoom / 100; let finalW = baseW * z; let finalH = baseH * z;
+            
+            ctx.save();
+            ctx.translate(W/2 + sData.panX, H/2 + sData.panY);
+            ctx.rotate(sData.rotation * Math.PI / 180);
+            
+            let scaleX = sData.flipH ? -1 : 1;
+            let scaleY = sData.flipV ? -1 : 1;
+            if (sData.faceSlim > 0) scaleX *= (1 - (sData.faceSlim/300));
+            ctx.scale(scaleX, scaleY);
+            
+            ctx.drawImage(imgToDraw, -finalW/2, -finalH/2, finalW, finalH);
+            ctx.restore();
+        }
+
+        function renderEditor() {
+            let sz = getSizes(); singleC.width = sz.w; singleC.height = sz.h;
+            drawSingle(sCtx, state[activeSide], activeSide === 'back');
+        }
+
+        function switchSide(side) {
+            activeSide = side;
+            const btnFront = document.getElementById('tabFront'); const btnBack = document.getElementById('tabBack');
+            if(side === 'front') {
+                btnFront.className = "flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-extrabold transition bg-[var(--panel-bg)] text-violet-600 shadow-sm";
+                btnBack.className = "flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-bold transition text-[var(--text-muted)]";
+            } else {
+                btnBack.className = "flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-extrabold transition bg-[var(--panel-bg)] text-violet-600 shadow-sm";
+                btnFront.className = "flex-1 py-1.5 md:py-2.5 rounded-lg text-[9px] md:text-xs font-bold transition text-[var(--text-muted)]";
+            }
+            let s = state[side]; studioDOM.zoom.value = s.zoom; document.getElementById('val-zoom').innerText = Math.round(s.zoom) + '%';
+            ['panX','panY','rotation','suitScale','suitPanX','suitPanY','bright','cont','sat','sharp','skinSmooth','teethFix','eyeBright','faceSlim','bgBlur','lensBlur'].forEach(id => { if(studioDOM[id]) studioDOM[id].value = s[id]; });
+            if(side === 'back') document.getElementById('backUploader').style.display = 'block'; else document.getElementById('backUploader').style.display = 'none';
+            renderEditor();
+        }
+
+        function downloadSingleHD() {
+            if(!state.front.imgObj) return showToast("No photo loaded to download!", "⚠️", true);
+            let sz = getSizes();
+            let exportC = document.createElement('canvas');
+            exportC.width = sz.w; exportC.height = sz.h;
+            let exportCtx = exportC.getContext('2d', { willReadFrequently: true });
+            
+            let gf = studioDOM.guideFace.checked; let ge = studioDOM.guideEyes.checked; 
+            studioDOM.guideFace.checked = false; studioDOM.guideEyes.checked = false;
+            
+            drawSingle(exportCtx, state[activeSide], activeSide === 'back');
+            
+            studioDOM.guideFace.checked = gf; studioDOM.guideEyes.checked = ge;
+            
+            exportC.toBlob((blob) => {
+                let a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `Passport_Single_HD_${Date.now()}.png`;
+                a.click();
+                showToast("Single Passport Photo Downloaded!", "📥");
+            }, 'image/png', 1.0);
+        }
+
+        function createReadyCanvas() {
+            let sz = getSizes();
+            if (studioDOM.photoSize.value === 'AADHAR' && state.front.imgObj && state.back.imgObj) {
+                let isVert = studioDOM.aadharMode.value === 'vert'; let gapPx = Math.round(5 * MM_TO_PX);
+                let tComp = document.createElement('canvas');
+                tComp.width = isVert ? sz.w : (sz.w * 2 + gapPx); tComp.height = isVert ? (sz.h * 2 + gapPx) : sz.h;
+                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
+                let tBack = document.createElement('canvas'); tBack.width = sz.w; tBack.height = sz.h;
+                let gf = studioDOM.guideFace.checked; let ge = studioDOM.guideEyes.checked; 
+                studioDOM.guideFace.checked = false; studioDOM.guideEyes.checked = false;
+                drawSingle(tFront.getContext('2d'), state.front, false); drawSingle(tBack.getContext('2d'), state.back, true);
+                studioDOM.guideFace.checked = gf; studioDOM.guideEyes.checked = ge;
+                let cCtx = tComp.getContext('2d'); cCtx.drawImage(tFront, 0, 0);
+                if (isVert) cCtx.drawImage(tBack, 0, sz.h + gapPx); else cCtx.drawImage(tBack, sz.w + gapPx, 0);
+                return tComp;
+            } else {
+                let tFront = document.createElement('canvas'); tFront.width = sz.w; tFront.height = sz.h;
+                let gf = studioDOM.guideFace.checked; let ge = studioDOM.guideEyes.checked; 
+                studioDOM.guideFace.checked = false; studioDOM.guideEyes.checked = false;
+                drawSingle(tFront.getContext('2d'), state.front, false); 
+                studioDOM.guideFace.checked = gf; studioDOM.guideEyes.checked = ge; return tFront;
+            }
+        }
+
+        window.addToQueue = function() {
+            if(!state.front.imgObj) return showToast("Nothing to append yet!", "⚠️", true);
+            if(studioDOM.photoSize.value === 'AADHAR' && !state.back.imgObj) return showToast("Upload Back-Side image first!", "⚠️", true);
+            printQueue.push(createReadyCanvas()); document.getElementById('queueCount').innerText = printQueue.length;
+            showToast(`Portrait added to Batch Print Queue: ${printQueue.length}`, "➕");
+            showModal({ title: "Layout Queued Successfully!", body: "Clear editor parameters to prepare the next portrait?", icon: "✅", confirmText: "Yes, Clear Editor", cancelText: "Keep Editing", onConfirm: () => { clearPhoto(false); } });
+        };
+
+        window.clearQueue = function() { printQueue = []; document.getElementById('queueCount').innerText = "0"; showToast("Batch Print Queue Cleared!", "🗑️"); };
+
+        window.clearPhoto = function(ask=true) {
+            const executeClear = () => {
+                state.front.imgObj = null; state.front.rawSrc = null; state.front.originalSrc = null; state.front.baseOriginal = null; state.front.aiData = null; state.front.editLayer = null; 
+                state.back.imgObj = null; state.back.rawSrc = null; state.back.originalSrc = null; state.back.baseOriginal = null; state.back.aiData = null; state.back.editLayer = null; 
+                sCtx.clearRect(0,0, singleC.width, singleC.height); document.getElementById('editorWrapper').style.display = 'none'; 
+                document.getElementById('dropZone').style.display = 'flex'; document.getElementById('fileIn').value = ""; document.getElementById('cameraIn').value = ""; document.getElementById('fileBack').value = ""; 
+                document.getElementById('scoreText').innerText = "Quality: Not Analyzed"; document.getElementById('blurText').innerText = "Scan landmarks to calculate passport symmetry";
+                document.getElementById('aiScoreBox').style.borderColor = "var(--border)"; document.getElementById('scoreText').style.color = "var(--text-main)"; switchSide('front');
+            };
+            if(ask) { showModal({ title: "Clear Current Project?", body: "Discard unsaved photo layers?", icon: "❌", onConfirm: executeClear }); } else { executeClear(); }
+        };
+
+        async function handleFile(file, side) {
+            if(!file) return; let finalFile = file;
+            if(file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                showToast("Converting high-efficiency iOS frame...", "⚡");
+                try { if(typeof heic2any !== 'undefined') finalFile = await heic2any({blob: file, toType: 'image/jpeg'}); } catch(e) { return showToast("iOS HEIC convert failed.", "⚠️", true); }
+            }
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                let img = new Image(); 
+                img.onload = () => {
+                    state[side].imgObj = img; state[side].rawSrc = e.target.result; state[side].originalSrc = e.target.result; 
+                    state[side].baseOriginal = img; state[side].aiData = null; state[side].editLayer = null;
+                    if(side === 'front') { document.getElementById('dropZone').style.display = 'none'; document.getElementById('editorWrapper').style.display = 'block'; switchSide('front'); } else switchSide('back');
+                    saveHistory();
+                }; img.src = e.target.result;
+            }; reader.readAsDataURL(finalFile);
+        }
+
+        function generateSheet() {
+            let photosToPrint = [...printQueue];
+            if(state.front.imgObj) {
+                if(studioDOM.photoSize.value === 'AADHAR' && !state.back.imgObj) return showToast("Upload Back-Side Image First!", "⚠️", true);
+                photosToPrint.unshift(createReadyCanvas());
+            }
+            if(photosToPrint.length === 0) return showToast("No frames to compile! Upload or queue photos first.", "⚠️", true);
+
+            let pSize = studioDOM.paperSize.value === 'A4' ? {w:210, h:297} : studioDOM.paperSize.value === '4x6' ? {w:101.6, h:152.4} : {w:127, h:177.8};
+            if(studioDOM.paperOrient.value === 'l') { let tmp = pSize.w; pSize.w = pSize.h; pSize.h = tmp; }
+            let pW = Math.round(pSize.w * MM_TO_PX); let pH = Math.round(pSize.h * MM_TO_PX);
+            sheetC.width = pW; sheetC.height = pH;
+            
+            sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
+            sheetCtx.fillStyle = '#ffffff'; sheetCtx.fillRect(0,0,pW,pH);
+
+            let cW = photosToPrint[0].width; let cH = photosToPrint[0].height;
+            let gap = Math.round(Number(studioDOM.gap.value) * MM_TO_PX);
+
+            const drawMarks = (x, y, w, h) => {
+                if(!studioDOM.cropMarks.checked) return;
+                let m = Math.round(DPI * 0.04); sheetCtx.strokeStyle = "#000000"; sheetCtx.lineWidth = 1.5; sheetCtx.beginPath();
+                sheetCtx.moveTo(x, y-m); sheetCtx.lineTo(x,y); sheetCtx.lineTo(x-m, y);
+                sheetCtx.moveTo(x+w, y-m); sheetCtx.lineTo(x+w, y); sheetCtx.lineTo(x+w+m, y);
+                sheetCtx.moveTo(x, y+h+m); sheetCtx.lineTo(x, y+h); sheetCtx.lineTo(x-m, y+h);
+                sheetCtx.moveTo(x+w, y+h+m); sheetCtx.lineTo(x+w, y+h); sheetCtx.lineTo(x+w+m, y+h); sheetCtx.stroke();
+            };
+
+            let cols = Math.max(1, Math.floor((pW + gap) / (cW + gap))); let rows = Math.max(1, Math.floor((pH + gap) / (cH + gap)));
+            let totalSlots = cols * rows; let targetCopies = Number(studioDOM.copies.value);
+            let isAadhar = (studioDOM.photoSize.value === 'AADHAR');
+
+            if (targetCopies === 0) targetCopies = isAadhar ? photosToPrint.length : totalSlots;
+            let copiesPerPhoto = Math.floor(targetCopies / photosToPrint.length);
+            let remainder = targetCopies % photosToPrint.length;
+
+            let totalW = cols * cW + (cols - 1) * gap; let totalH = rows * cH + (rows - 1) * gap;
+            let startX = (pW - totalW) / 2; let startY = (pH - totalH) / 2;
+            
+            if (targetCopies === 1 && !isAadhar) { startX = (pW - cW) / 2; startY = (pH - cH) / 2; } 
+            else if (isAadhar && targetCopies <= cols) { startY = Math.max(gap, Math.round(15 * MM_TO_PX)); if (targetCopies === 1) startX = (pW - cW) / 2; }
+
+            let count = 0; let photoIndex = 0; let copiesDrawnForCurrent = 0;
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    if(count >= targetCopies) break;
+                    let x = startX + c*(cW+gap); let y = startY + r*(cH+gap);
+                    sheetCtx.drawImage(photosToPrint[photoIndex], x, y); drawMarks(x, y, cW, cH);
+                    count++; copiesDrawnForCurrent++; let quota = copiesPerPhoto + (photoIndex < remainder ? 1 : 0);
+                    if(copiesDrawnForCurrent >= quota) { photoIndex++; copiesDrawnForCurrent = 0; if(photoIndex >= photosToPrint.length) photoIndex = 0; }
+                }
+            }
+
+            if(studioDOM.watermarkText.value.trim() !== "") {
+                sheetCtx.save(); sheetCtx.translate(pW/2, pH/2); sheetCtx.rotate(-Math.PI / 4); 
+                sheetCtx.fillStyle = "rgba(0, 0, 0, 0.04)"; sheetCtx.font = "bold 130px sans-serif";
+                sheetCtx.textAlign = "center"; sheetCtx.textBaseline = "middle";
+                sheetCtx.fillText(studioDOM.watermarkText.value.toUpperCase(), 0, 0);
+                sheetCtx.fillText(studioDOM.watermarkText.value.toUpperCase(), 0, -600);
+                sheetCtx.fillText(studioDOM.watermarkText.value.toUpperCase(), 0, 600); sheetCtx.restore();
+            }
+
+            sheetC.classList.remove('hidden'); 
+            const actionBar = document.getElementById('actionBar');
+            actionBar.classList.remove('hidden'); 
+            actionBar.classList.add('flex'); 
+            sheetC.scrollIntoView({behavior: 'smooth'}); 
+            showToast("Print layout sheet compiled in 600 DPI Ultra-HD!", "✨");
+        }
+
+        function downloadFile(type) {
+            sheetC.toBlob((blob)=>{ 
+                let a=document.createElement("a"); 
+                a.href=URL.createObjectURL(blob); 
+                a.download=`RiyanshiStudio_Print_600DPI.${type}`; 
+                a.click(); 
+            }, type === 'png' ? 'image/png' : 'image/jpeg', 1.0);
+        }
+
+        function downloadPDF() {
+            try {
+                const { jsPDF } = window.jspdf; let pType = studioDOM.paperSize.value; let sizes = { "A4": [210, 297], "4x6": [101.6, 152.4], "5x7": [127, 177.8] };
+                let pW = sizes[pType][0]; let pH = sizes[pType][1];
+                let orient = studioDOM.paperOrient.value;
+                let doc = new jsPDF({ orientation: orient, unit: 'mm', format: [pW, pH], compress: true });
+                let finalW = orient === 'l' ? pH : pW;
+                let finalH = orient === 'l' ? pW : pH;
+                
+                let imgData = sheetC.toDataURL('image/jpeg', 0.92);
+                doc.addImage(imgData, 'JPEG', 0, 0, finalW, finalH, undefined, 'FAST'); 
+                doc.save(`RiyanshiStudio_Print_${pType}_Compact.pdf`);
+                showToast("Optimized Compact HD PDF Downloaded!", "📄");
+            } catch(e) { showToast("PDF library exception.", "⚠️", true); }
+        }
+
+        function printSheet() {
+            let cssPage = { "A4": "210mm 297mm", "4x6": "101.6mm 152.4mm", "5x7": "127mm 177.8mm" }[studioDOM.paperSize.value];
+            if (studioDOM.paperOrient.value === 'l') cssPage += " landscape";
+            let w = window.open('','_blank');
+            w.document.write(`<html><head><style>@page { size: ${cssPage}; margin: 0; } body { margin: 0; display: flex; justify-content: center; align-items: center; background: #fff; height: 100vh; } img { width: 100%; height: 100%; object-fit: contain; }</style></head><body onload="setTimeout(()=>window.print(),500)"><img src="${sheetC.toDataURL('image/jpeg', 0.95)}"></body></html>`);
+            w.document.close();
+        }
+
+        function showToast(msg, icon="✨", isError=false) {
+            let t = document.getElementById('toast'); document.getElementById('toastIcon').innerText = icon; document.getElementById('toastMsg').innerText = msg;
+            t.style.background = isError ? 'var(--danger)' : 'var(--text-main)'; t.style.color = isError ? '#ffffff' : 'var(--panel-bg)';
+            t.classList.remove('opacity-0', 'translate-y-24'); t.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => { t.classList.remove('opacity-100', 'translate-y-0'); t.classList.add('opacity-0', 'translate-y-24'); }, 3500);
+        }
+        
+        window.adjust = function(id, val) {
+            let el = studioDOM[id]; el.value = Math.max(el.min, Math.min(el.max, Number(el.value) + val)); el.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        function startNativeCamera() { document.getElementById('cameraIn').click(); }
+
+        function saveHistory() {
+            if(hIndex < history.length-1) history = history.slice(0, hIndex+1);
+            let clone = JSON.stringify({ 
+                f: { ...state.front, imgObj: null, rawSrc: state.front.rawSrc, originalSrc: state.front.originalSrc, baseOriginal: null, aiData: null, editLayer: null, editLayerSrc: state.front.editLayer ? state.front.editLayer.toDataURL('image/png') : null }, 
+                b: { ...state.back, imgObj: null, rawSrc: state.back.rawSrc, originalSrc: state.back.originalSrc, baseOriginal: null, aiData: null, editLayer: null, editLayerSrc: state.back.editLayer ? state.back.editLayer.toDataURL('image/png') : null }, 
+                customBgSrc: customBgImg ? customBgImg.src : null,
+                inputs: ids.map(id => ({ id, val: studioDOM[id] ? (studioDOM[id].type === 'checkbox' ? studioDOM[id].checked : studioDOM[id].value) : null }))
+            });
+            history.push(JSON.parse(clone)); hIndex++;
+            if(history.length > 15){ history.shift(); hIndex--; }
+            try { safeStorage.setItem('passport_studio_autosave', clone); let badge = document.getElementById('autoSaveBadge'); badge.style.display = 'flex'; setTimeout(()=> badge.style.display = 'none', 1800); } catch(e) {}
+        }
+
+        function loadState(data) {
+            data.inputs.forEach(i => { if(studioDOM[i.id]) { if(studioDOM[i.id].type==='checkbox') studioDOM[i.id].checked = i.val; else studioDOM[i.id].value = i.val; } });
+            Object.assign(state.front, data.f); Object.assign(state.back, data.b);
+            if(data.customBgSrc) { let bg = new Image(); bg.onload = () => { customBgImg = bg; renderEditor(); }; bg.src = data.customBgSrc; } else { customBgImg = null; }
+            
+            const rebuild = (side, dataSide) => { 
+                if(dataSide.rawSrc) { let i = new Image(); i.onload = () => { state[side].imgObj = i; renderEditor(); }; i.src = dataSide.rawSrc; } 
+                if(dataSide.originalSrc) { let o = new Image(); o.onload = () => { state[side].baseOriginal = o; renderEditor(); }; o.src = dataSide.originalSrc; }
+                if(dataSide.editLayerSrc) { let el = new Image(); el.onload = () => { state[side].editLayer = document.createElement('canvas'); state[side].editLayer.width = el.width; state[side].editLayer.height = el.height; state[side].editLayer.getContext('2d').drawImage(el, 0, 0); renderEditor(); }; el.src = dataSide.editLayerSrc; }
+            };
+            rebuild('front', data.f); rebuild('back', data.b);
+            
+            if(studioDOM.photoSize.value === 'CUSTOM') document.getElementById('customSizeBox').style.display = 'grid';
+            if(studioDOM.photoSize.value === 'AADHAR') document.getElementById('aadharModeBox').style.display = 'block';
+            studioDOM.bgType.dispatchEvent(new Event('change'));
+        }
+
+        document.getElementById('saveProjectBtn').addEventListener('click', () => {
+            if(!state.front.rawSrc) return showToast("No photo loaded to export project!", "⚠️", true);
+            let blob = new Blob([JSON.stringify(history[hIndex])], {type: "application/json"});
+            let link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `RiyanshiComputerStudio_${new Date().toISOString().slice(0,10)}.studio`; link.click(); showToast("Project save (.studio) downloaded!", "💾");
+        });
+
+        document.getElementById('loadProjectBtn').addEventListener('click', () => document.getElementById('projectInput').click());
+        document.getElementById('projectInput').addEventListener('change', (e) => {
+            let reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    let data = JSON.parse(event.target.result); document.getElementById('dropZone').style.display = 'none'; document.getElementById('editorWrapper').style.display = 'block'; loadState(data); saveHistory(); showToast("Project loaded successfully!", "📂");
+                } catch(err) { showToast("Corrupt workspace file.", "⚠️", true); }
+            }; reader.readAsText(e.target.files[0]);
+        });
+    </script>
+</body>
+</html>
